@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -8,39 +9,51 @@ datasource db {
 }
 
 
-
-
-model User {
-  id        String    @id @default(uuid())
-  email     String    @unique
-  name      String
-  bookings  Booking[]
-  createdAt DateTime  @default(now())
-}
-
 model Equipment {
-  id           String   @id @default(uuid())
-  name         String
-  category     String
-  serialNumber String   @unique
-  dailyRate    Float
-  imageUrl     String?
-  stock        Int      @default(1) // Total Inventory Owned
-  rentedOut    Int      @default(0) // Currently Out on Rental
-  bookings     Booking[]
-  createdAt    DateTime @default(now())
+  id                  String        @id @default(uuid())
+  name                String
+  category            String
+  serialNumber        String        @unique
+  dailyRate           Float
+  imageUrl            String?
+  stock               Int           @default(1)
+  rentedOut           Int           @default(0)
+  description         String?
+  mount               String?
+  resolution          String?
+  keyFeatures         String?
+  includedAccessories String?
+  bookingItems        BookingItem[]
+  createdAt           DateTime      @default(now())
 }
-
 
 model Booking {
-  id          String    @id @default(uuid())
-  startDate   DateTime
-  endDate     DateTime
-  totalPrice  Float
-  status      String    @default("PENDING") 
-  equipmentId String
-  equipment   Equipment @relation(fields: [equipmentId], references: [id])
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  createdAt   DateTime  @default(now())
+  id             String        @id @default(uuid())
+  doNumber       String        @unique
+  customerName   String
+  phone          String
+  identityNo     String
+  email          String?
+  deliveryMethod String
+  address        String?
+  paymentMethod  String
+  notes          String?
+  totalPrice     Float
+  status         String        @default("CONFIRMED")
+  startDate      DateTime?
+  endDate        DateTime?
+  items          BookingItem[]
+  createdAt      DateTime      @default(now())
+}
+
+model BookingItem {
+  id          String     @id @default(uuid())
+  bookingId   String
+  booking     Booking    @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  equipmentId String?
+  equipment   Equipment? @relation(fields: [equipmentId], references: [id])
+  quantity    Int        @default(1)
+  startDate   String
+  endDate     String
+  subtotal    Float
 }

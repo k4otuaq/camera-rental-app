@@ -10,6 +10,8 @@
     "postinstall": "prisma skills sync || exit 0"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
+    "@prisma/adapter-libsql": "^7.10.0",
     "@prisma/client": "^5.22.0",
     "next": "16.4.0",
     "prisma": "^5.22.0",

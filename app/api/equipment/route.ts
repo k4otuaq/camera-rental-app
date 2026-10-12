@@ -5,55 +5,140 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
-const fallbackEquipment = [
+const db = prisma as any;
+
+const defaultItems = [
   {
-    id: "c-stand-id",
-    name: "C-stand",
-    category: "Stand",
-    serialNumber: "CST-001",
-    dailyRate: 20.0,
-    imageUrl: "/cstand.jpeg",
-    stock: 50
-  },
-  {
-    id: "komodo-id",
     name: "RED Komodo 6k",
     category: "CINEMA CAMERA",
     serialNumber: "KMDBK3468",
-    dailyRate: 800.0,
+    dailyRate: 800,
     imageUrl: "/komodo.webp",
-    stock: 1
+    stock: 3,
+    rentedOut: 0,
   },
   {
-    id: "ray660-id",
     name: "AMARAN Ray 660c",
-    category: "RGB Light",
+    category: "LIGHTING",
     serialNumber: "RAY660H2",
-    dailyRate: 400.0,
+    dailyRate: 400,
     imageUrl: "/ray660.webp",
-    stock: 1
+    stock: 2,
+    rentedOut: 0,
   },
   {
-    id: "ray120-id",
     name: "AMARAN Ray 120c",
-    category: "RGB Light",
+    category: "LIGHTING",
     serialNumber: "RAY120CH",
-    dailyRate: 200.0,
+    dailyRate: 200,
     imageUrl: "/ray120.webp",
-    stock: 1
-  }
+    stock: 4,
+    rentedOut: 0,
+  },
+  {
+    name: "C-stand",
+    category: "GRIP",
+    serialNumber: "CST-001",
+    dailyRate: 20,
+    imageUrl: null,
+    stock: 10,
+    rentedOut: 0,
+  },
 ];
 
+// GET ALL EQUIPMENT
 export async function GET() {
   try {
-    const equipment = await prisma.equipment.findMany();
-    if (equipment && equipment.length > 0) {
-      return NextResponse.json(equipment);
+    let equipment = await db.equipment.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (equipment.length === 0) {
+      for (const item of defaultItems) {
+        await db.equipment.create({ data: item });
+      }
+      equipment = await db.equipment.findMany({
+        orderBy: { createdAt: "desc" },
+      });
     }
-    return NextResponse.json(fallbackEquipment);
-  } catch (error) {
-    console.error("Prisma fetch error, serving fallback inventory:", error);
-    return NextResponse.json(fallbackEquipment);
+
+    return NextResponse.json(equipment);
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
+// CREATE NEW EQUIPMENT
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { name, category, serialNumber, dailyRate, stock, imageUrl } = body;
+
+    if (!name || !category || !serialNumber || !dailyRate) {
+      return NextResponse.json(
+        { success: false, error: "Please fill in all required fields." },
+        { status: 400 }
+      );
+    }
+
+    const item = await db.equipment.create({
+      data: {
+        name,
+        category: category.toUpperCase(),
+        serialNumber,
+        dailyRate: parseFloat(dailyRate),
+        stock: parseInt(stock || 1, 10),
+        rentedOut: 0,
+        imageUrl: imageUrl || null,
+      },
+    });
+
+    return NextResponse.json({ success: true, item });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+// EDIT/UPDATE EQUIPMENT
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json();
+    const { id, name, category, serialNumber, dailyRate, stock, imageUrl } = body;
+
+    const updated = await db.equipment.update({
+      where: { id },
+      data: {
+        name,
+        category: category.toUpperCase(),
+        serialNumber,
+        dailyRate: parseFloat(dailyRate),
+        stock: parseInt(stock, 10),
+        imageUrl: imageUrl || null,
+      },
+    });
+
+    return NextResponse.json({ success: true, item: updated });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+// DELETE EQUIPMENT
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: "Equipment ID is required." }, { status: 400 });
+    }
+
+    await db.equipment.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}

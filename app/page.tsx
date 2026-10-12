@@ -1,123 +1,80 @@
 "use client"
-
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import EquipmentCard from "./EquipmentCard";
+import Link from "next/link";
+
+const imageMap: Record<string, string> = {
+  "RED Komodo 6k": "/komodo.webp",
+  "AMARAN Ray 660c": "/ray660.webp",
+  "AMARAN Ray 120c": "/ray120.webp"
+};
 
 export default function Home() {
-  const router = useRouter();
-  const [allEquipment, setAllEquipment] = useState<any[]>([]);
-  const [cart, setCart] = useState<any[]>([]);
-  
+  const [equipment, setEquipment] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState("ALL");
 
   useEffect(() => {
     async function fetchEquipment() {
       try {
-        const res = await fetch('/api/equipment');
+        const res = await fetch("/api/equipment");
         const data = await res.json();
-        
         if (Array.isArray(data)) {
-          setAllEquipment(data);
-        } else {
-          console.error("API response was not an array:", data);
-          setAllEquipment([]);
+          setEquipment(data);
         }
       } catch (err) {
-        console.error("Failed to fetch equipment", err);
-        setAllEquipment([]);
+        console.error("Error fetching equipment:", err);
+      } finally {
+        setLoading(false);
       }
     }
     fetchEquipment();
-
-    const savedCart = JSON.parse(localStorage.getItem("rental_cart") || "[]");
-    setCart(savedCart);
   }, []);
 
-  const handleAddToCart = (booking: { item: any; startDate: string; endDate: string; quantity: number }) => {
-    const updatedCart = [...cart, booking];
-    setCart(updatedCart);
-    localStorage.setItem("rental_cart", JSON.stringify(updatedCart));
-  };
+  // Extract unique categories dynamically from the database list
+  const categories = ["ALL", ...Array.from(new Set(equipment.map((item) => item.category)))];
 
-  const handleRemoveFromCart = (indexToRemove: number) => {
-    const updatedCart = cart.filter((_, index) => index !== indexToRemove);
-    setCart(updatedCart);
-    localStorage.setItem("rental_cart", JSON.stringify(updatedCart));
-  };
-
-  const handleClearCart = () => {
-    setCart([]);
-    localStorage.removeItem("rental_cart");
-  };
-
-  const getRentalDetails = (startDate: string, endDate: string, dailyRate: number, quantity: number = 1) => {
-    if (!startDate || !endDate) return { days: 0, totalPrice: 0, qty: quantity };
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = end.getTime() - start.getTime();
-    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    const days = diffDays > 0 ? diffDays : 1;
-    const qty = quantity || 1;
-    const totalPrice = days * dailyRate * qty;
-    return { days, totalPrice, qty };
-  };
-
-  const grandTotal = cart.reduce((sum, booking) => {
-    const { totalPrice } = getRentalDetails(
-      booking.startDate, 
-      booking.endDate, 
-      booking.item.dailyRate, 
-      booking.quantity
-    );
-    return sum + totalPrice;
-  }, 0);
-
-  const handleProceedToDO = () => {
-    if (cart.length === 0) {
-      alert("Your cart is empty!");
-      return;
-    }
-    router.push("/checkout");
-  };
-
-  const equipmentList = Array.isArray(allEquipment) ? allEquipment : [];
-
-  const filteredEquipment = equipmentList.filter((item) => {
-    const matchesSearch = item.name?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
+  // Filter equipment based on Search Bar and Selected Category
+  const filteredEquipment = equipment.filter((item) => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "ALL" || item.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const categories = ["All", ...Array.from(new Set(equipmentList.map(item => item.category)))];
-
   return (
-    <main className="p-8 font-sans max-w-7xl mx-auto min-h-screen">
-      <h1 className="text-4xl font-bold mb-2">My Camera Rental Shop</h1>
-      <p className="text-lg opacity-75 mb-6">Live inventory from my database.</p>
+    <main className="p-8 font-sans max-w-6xl mx-auto min-h-screen text-black dark:text-white">
+      
+      {/* HEADER & HERO */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-extrabold tracking-tight uppercase mb-2">
+          Equipment Catalog
+        </h1>
+        <p className="text-sm opacity-75">
+          Browse live inventory, check rental availability, and book gear online.
+        </p>
+      </div>
 
       {/* SEARCH BAR */}
-      <div className="mb-4">
-        <input 
+      <div className="mb-6">
+        <input
           type="text"
-          placeholder="Search equipment by name..."
+          placeholder="Search equipment by name or model..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="border-2 border-black dark:border-white rounded-lg p-3 bg-white dark:bg-black text-black dark:text-white w-full outline-none text-sm"
+          className="w-full border-2 border-black dark:border-white rounded-lg p-3 text-sm bg-white dark:bg-black font-medium outline-none shadow-sm focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
-      {/* CATEGORIES BAR */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-8">
+      {/* DYNAMIC CATEGORY FILTER BUTTONS */}
+      <div className="flex flex-wrap gap-2 mb-8">
         {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => setSelectedCategory(cat)}
-            className={`px-4 py-2 rounded-lg font-bold border-2 border-black dark:border-white text-sm transition-colors cursor-pointer whitespace-nowrap ${
-              selectedCategory === cat 
-                ? "bg-black text-white dark:bg-white dark:text-black" 
-                : "bg-white text-black dark:bg-black dark:text-white hover:opacity-70"
+            className={`px-4 py-2 rounded-lg text-xs font-extrabold uppercase transition-all cursor-pointer border-2 ${
+              selectedCategory === cat
+                ? "bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow"
+                : "border-black dark:border-white hover:bg-gray-100 dark:hover:bg-gray-900"
             }`}
           >
             {cat}
@@ -125,100 +82,88 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Equipment Catalogue Grid */}
-      <div className="flex flex-wrap gap-6 mb-12">
-        {filteredEquipment.length === 0 ? (
-          <p className="opacity-60 text-sm">No equipment matches your search criteria.</p>
-        ) : (
-          filteredEquipment.map((item) => (
-            <div key={item.id} className="w-full sm:w-[350px] flex-shrink-0">
-              <EquipmentCard item={item} onBook={handleAddToCart} />
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Rental Cart Section */}
-      <div className="p-6 border-2 border-black dark:border-white rounded-lg bg-white dark:bg-black text-black dark:text-white shadow-lg">
-        <div className="flex justify-between items-center mb-6 border-b-2 border-black dark:border-white pb-4">
-          <h2 className="text-2xl font-bold">Your Rental Cart ({cart.length})</h2>
-          {cart.length > 0 && (
-            <button 
-              onClick={handleClearCart}
-              className="text-xs font-bold text-red-500 hover:underline cursor-pointer"
-            >
-              Clear Cart
-            </button>
-          )}
+      {/* EQUIPMENT GRID */}
+      {loading ? (
+        <p className="text-center font-bold text-lg py-12">Loading store catalog...</p>
+      ) : filteredEquipment.length === 0 ? (
+        <div className="p-12 border-2 border-black dark:border-white rounded-lg text-center opacity-60">
+          <p className="text-lg font-bold">No gear found matching your search.</p>
+          <p className="text-xs mt-1">Try clearing your category filter or search query.</p>
         </div>
-        
-        {cart.length === 0 ? (
-          <p className="opacity-60 text-sm py-4 text-center">No items added to your cart yet.</p>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {cart.map((booking, index) => {
-              const { days, totalPrice, qty } = getRentalDetails(
-                booking.startDate, 
-                booking.endDate, 
-                booking.item.dailyRate,
-                booking.quantity
-              );
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredEquipment.map((item) => {
+            const totalStock = item.stock ?? 1;
+            const rentedOut = item.rentedOut ?? 0;
+            const availableLeft = Math.max(0, totalStock - rentedOut);
+            const displayImage = imageMap[item.name] || item.imageUrl;
 
-              return (
-                <div key={index} className="flex justify-between items-center border-b border-gray-300 dark:border-gray-800 pb-4">
-                  <div className="flex-1 pr-4">
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-lg">{booking.item.name}</p>
-                      <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs font-bold px-2 py-0.5 rounded border border-blue-400">
-                        Qty: {qty}
-                      </span>
+            return (
+              <div
+                key={item.id}
+                className="border-2 border-black dark:border-white rounded-lg p-5 bg-white dark:bg-black shadow-md flex flex-col justify-between hover:shadow-xl transition-shadow"
+              >
+                <div>
+                  {/* IMAGE */}
+                  {displayImage ? (
+                    <img
+                      src={displayImage}
+                      alt={item.name}
+                      className="w-full h-48 object-cover rounded border-2 border-black dark:border-white bg-white mb-4"
+                    />
+                  ) : (
+                    <div className="w-full h-48 border-2 border-black dark:border-white border-dashed rounded mb-4 flex items-center justify-center bg-gray-50 dark:bg-gray-900 opacity-60 font-bold text-xs">
+                      📷 {item.name}
                     </div>
+                  )}
 
-                    <p className="text-xs opacity-75 mt-1">
-                      Serial: <span className="font-bold">{booking.item.serialNumber || "N/A"}</span>
-                    </p>
+                  {/* CATEGORY & TITLE */}
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider bg-gray-200 dark:bg-gray-800 px-2 py-0.5 rounded">
+                    {item.category}
+                  </span>
+                  <h2 className="text-xl font-bold mt-2 mb-1">{item.name}</h2>
+                  <p className="text-xs opacity-60 font-mono mb-3">S/N: {item.serialNumber}</p>
 
-                    <p className="text-xs opacity-75 mt-1">
-                      Rental Dates: <span className="font-bold">{booking.startDate}</span> to <span className="font-bold">{booking.endDate}</span> ({days} {days === 1 ? 'day' : 'days'})
-                    </p>
-                  </div>
-
-                  <div className="text-right flex items-center gap-4">
+                  {/* STOCK BADGES */}
+                  <div className="p-3 rounded border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 flex justify-between text-[11px] mb-4">
                     <div>
-                      <p className="font-bold text-lg text-blue-600 dark:text-blue-400">
-                        RM {totalPrice.toFixed(2)}
-                      </p>
-                      <p className="text-xs opacity-60">
-                        RM {booking.item.dailyRate.toFixed(2)} / day × {qty} unit(s)
-                      </p>
+                      <span className="block opacity-60">Owned</span>
+                      <strong className="text-sm">{totalStock}</strong>
                     </div>
-
-                    <button
-                      onClick={() => handleRemoveFromCart(index)}
-                      className="text-red-500 hover:bg-red-50 dark:hover:bg-red-950 p-2 rounded-lg font-bold text-sm transition-colors cursor-pointer"
-                      title="Remove Item"
-                    >
-                      ✕
-                    </button>
+                    <div>
+                      <span className="block opacity-60">Rented</span>
+                      <strong className="text-sm text-orange-500">{rentedOut}</strong>
+                    </div>
+                    <div>
+                      <span className="block opacity-60">Available</span>
+                      <strong className={`text-sm ${availableLeft > 0 ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
+                        {availableLeft}
+                      </strong>
+                    </div>
                   </div>
+
+                  <p className="text-lg font-extrabold text-blue-600 dark:text-blue-400 mb-4">
+                    RM {item.dailyRate?.toFixed(2)} <span className="text-xs font-normal text-black dark:text-white opacity-60">/ day</span>
+                  </p>
                 </div>
-              );
-            })}
 
-            <div className="flex justify-between items-center pt-4 border-t-2 border-black dark:border-white text-xl font-bold">
-              <span>Grand Total:</span>
-              <span className="text-blue-600 dark:text-blue-400">RM {grandTotal.toFixed(2)}</span>
-            </div>
+                {/* VIEW DETAILS BUTTON */}
+                <Link
+                  href={`/equipment/${encodeURIComponent(item.id)}`}
+                  className={`w-full text-center py-2.5 rounded-lg font-extrabold text-xs uppercase tracking-wider transition-opacity ${
+                    availableLeft > 0
+                      ? "bg-black text-white dark:bg-white dark:text-black hover:opacity-80"
+                      : "bg-gray-300 text-gray-500 dark:bg-gray-800 dark:text-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  {availableLeft > 0 ? "View & Book Gear →" : "Out of Stock"}
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
-            <button
-              onClick={handleProceedToDO}
-              className="mt-4 bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto self-end cursor-pointer"
-            >
-              Proceed to Delivery Order (DO)
-            </button>
-          </div>
-        )}
-      </div>
     </main>
   );
 }

@@ -3,158 +3,238 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 
 export default function CheckoutPage() {
+  const [mounted, setMounted] = useState(false);
   const [cart, setCart] = useState<any[]>([]);
-  const [isSubmitted, setIsSubmitted] = useState(false);
 
   // Customer Form State
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
   const [identityNo, setIdentityNo] = useState("");
-  const [deliveryMethod, setDeliveryMethod] = useState("Pickup"); // "Pickup" or "Delivery"
-  const deliveryFee = 50; // Fixed delivery fee of RM 50
-  
-  // Payment Method State
-  const [paymentMethod, setPaymentMethod] = useState("DuitNow QR / FPX");
-  
+  const [email, setEmail] = useState("");
+  const [deliveryMethod, setDeliveryMethod] = useState("Self Pickup (Free)");
   const [address, setAddress] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("DuitNow QR / FPX");
   const [notes, setNotes] = useState("");
 
-  useEffect(() => {
-    const savedCart = JSON.parse(localStorage.getItem("rental_cart") || "[]");
-    setCart(savedCart);
-  }, []);
+  const [loading, setLoading] = useState(false);
+  const [createdBooking, setCreatedBooking] = useState<any | null>(null);
+  const [orderedItems, setOrderedItems] = useState<any[]>([]);
 
-  const getRentalDetails = (startDate: string, endDate: string, dailyRate: number, quantity: number = 1) => {
-    if (!startDate || !endDate) return { days: 0, totalPrice: 0, qty: quantity };
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+  const calcDays = (startStr: string, endStr: string) => {
+    if (!startStr || !endStr) return 1;
+    const start = new Date(startStr);
+    const end = new Date(endStr);
     const diffTime = end.getTime() - start.getTime();
     const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    const days = diffDays > 0 ? diffDays : 1;
-    const qty = quantity || 1;
-    const totalPrice = days * dailyRate * qty;
-    return { days, totalPrice, qty };
+    return diffDays > 0 ? diffDays : 1;
   };
 
-  // Subtotal of gear rentals
-  const rentalSubtotal = cart.reduce((sum, booking) => {
-    const { totalPrice } = getRentalDetails(
-      booking.startDate,
-      booking.endDate,
-      booking.item.dailyRate,
-      booking.quantity
-    );
-    return sum + totalPrice;
-  }, 0);
+  const calcSubtotal = (c: any) => {
+    if (!c) return 0;
+    const days = calcDays(c.startDate, c.endDate);
+    const rate = Number(c.item?.dailyRate) || 0;
+    const qty = Number(c.quantity) || 1;
+    return rate * qty * days;
+  };
 
-  // Additional Delivery Surcharge applied only if "Delivery" is selected
-  const activeDeliveryFee = deliveryMethod === "Delivery" ? deliveryFee : 0;
-  
-  // Grand Total = Rental Subtotal + Delivery Fee
-  const grandTotal = rentalSubtotal + activeDeliveryFee;
+  useEffect(() => {
+    setMounted(true);
+    try {
+      const saved = JSON.parse(localStorage.getItem("rental_cart") || "[]");
+      const normalized = saved.map((c: any) => {
+        const itemObj = c.item || c.equipment || c;
+        const startDate = c.startDate || new Date().toISOString().split("T")[0];
+        const endDate = c.endDate || new Date().toISOString().split("T")[0];
+        const quantity = Number(c.quantity) || 1;
+        const selected = c.selected !== false;
 
-  const handleSubmitOrder = (e: React.FormEvent) => {
+        return {
+          item: itemObj,
+          startDate,
+          endDate,
+          quantity,
+          selected,
+          subtotal: calcSubtotal({ item: itemObj, startDate, endDate, quantity }),
+        };
+      });
+      setCart(normalized);
+    } catch (err) {
+      console.error("Error reading cart from localStorage:", err);
+      setCart([]);
+    }
+  }, []);
+
+  const saveCartToStorage = (updatedCart: any[]) => {
+    setCart(updatedCart);
+    localStorage.setItem("rental_cart", JSON.stringify(updatedCart));
+    window.dispatchEvent(new Event("cartUpdated"));
+  };
+
+  const toggleItemSelection = (index: number) => {
+    const updated = [...cart];
+    updated[index].selected = !updated[index].selected;
+    saveCartToStorage(updated);
+  };
+
+  const updateQuantity = (index: number, delta: number) => {
+    const updated = [...cart];
+    const newQty = Math.max(1, (updated[index].quantity || 1) + delta);
+    updated[index].quantity = newQty;
+    updated[index].subtotal = calcSubtotal(updated[index]);
+    saveCartToStorage(updated);
+  };
+
+  const removeItem = (index: number) => {
+    const updated = cart.filter((_, i) => i !== index);
+    saveCartToStorage(updated);
+  };
+
+  const clearCart = () => {
+    saveCartToStorage([]);
+  };
+
+  const selectedCartItems = cart.filter((item) => item.selected);
+  const deliveryFee = deliveryMethod.includes("Site Delivery") ? 50 : 0;
+  const itemsTotal = selectedCartItems.reduce((sum, item) => sum + calcSubtotal(item), 0);
+  const grandTotal = itemsTotal + deliveryFee;
+
+  const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (cart.length === 0) {
-      alert("Your cart is empty!");
+    if (selectedCartItems.length === 0) {
+      alert("Please select at least one item to include in your order!");
       return;
     }
 
-    if (!customerName || !phone || !identityNo) {
-      alert("Please fill in all required customer details (Name, Phone, IC/Passport).");
-      return;
-    }
+    setLoading(true);
 
-    if (deliveryMethod === "Delivery" && !address) {
-      alert("Please provide a delivery address.");
-      return;
-    }
+    try {
+      const payload = {
+        customerName,
+        phone,
+        identityNo,
+        email,
+        deliveryMethod,
+        address: deliveryMethod.includes("Delivery") ? address : null,
+        paymentMethod,
+        notes,
+        totalPrice: grandTotal,
+        cart: selectedCartItems,
+      };
 
-    setIsSubmitted(true);
+      const res = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.booking) {
+        setOrderedItems(selectedCartItems);
+        setCreatedBooking(data.booking);
+
+        const remainingCart = cart.filter((item) => !item.selected);
+        saveCartToStorage(remainingCart);
+      } else {
+        alert(`Booking Error: ${data.error || "Failed to create booking"}`);
+      }
+    } catch (err: any) {
+      console.error("Checkout submit error:", err);
+      alert(`Network/Server error: ${err.message || "Failed to submit order"}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (isSubmitted) {
-    const doNumber = `DO-${Math.floor(100000 + Math.random() * 900000)}`;
-    const currentDate = new Date().toLocaleDateString();
-
+  if (!mounted) {
     return (
-      <main className="p-8 font-sans max-w-4xl mx-auto min-h-screen text-black dark:text-white">
-        
-        {/* TOP CONTROL BAR */}
-        <div className="flex flex-wrap gap-3 mb-6 print:hidden justify-between items-center">
-          <button
-            onClick={() => setIsSubmitted(false)}
-            className="border-2 border-black dark:border-white px-4 py-2 rounded-lg font-bold hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors cursor-pointer text-sm"
+      <main className="p-8 font-sans max-w-6xl mx-auto min-h-screen text-center font-bold text-lg">
+        Loading checkout session...
+      </main>
+    );
+  }
+
+  // --- SUCCESSFUL ORDER: PERFECT 2-PAGE PDF PRINT LAYOUT ---
+  if (createdBooking) {
+    return (
+      <main className="p-4 sm:p-8 font-sans max-w-4xl mx-auto min-h-screen text-black dark:text-white print:p-0 print:m-0 print:max-w-none print:bg-white print:text-black">
+        {/* PRINT CSS STYLES FOR EXACT 2-PAGE PDF BREAKS */}
+        <style jsx global>{`
+          @media print {
+            header, footer, nav, .print-hidden {
+              display: none !important;
+            }
+            body {
+              background: #fff !important;
+              color: #000 !important;
+            }
+            .pdf-page-1 {
+              page-break-after: always !important;
+              break-after: page !important;
+              min-h-[100vh];
+            }
+            .pdf-page-2 {
+              page-break-before: always !important;
+              break-before: page !important;
+              min-h-[100vh];
+            }
+          }
+        `}</style>
+
+        {/* TOP ACTION BUTTONS */}
+        <div className="flex justify-between items-center mb-6 print-hidden">
+          <Link
+            href="/"
+            className="border-2 border-black dark:border-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-gray-100 dark:hover:bg-gray-900"
           >
-            ← Back to Edit Details
+            ← Return to Store
+          </Link>
+          <button
+            onClick={() => window.print()}
+            className="bg-blue-600 text-white font-extrabold px-6 py-2.5 rounded-lg text-xs hover:bg-blue-700 transition-colors cursor-pointer shadow-lg"
+          >
+            📥 Save / Download DO as PDF
           </button>
-          <div className="flex gap-3">
-            <button
-              onClick={() => window.print()}
-              className="bg-black text-white dark:bg-white dark:text-black px-5 py-2 rounded-lg font-bold hover:opacity-80 transition-opacity cursor-pointer text-sm"
-            >
-              🖨️ Print / Save DO (2 Pages)
-            </button>
-            <Link
-              href="/"
-              className="bg-blue-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-blue-700 transition-colors text-sm"
-            >
-              Return to Store
-            </Link>
-          </div>
         </div>
 
-        {/* PAGE 1: DELIVERY ORDER SUMMARY */}
-        <div className="border-4 border-black dark:border-white p-8 rounded-lg bg-white dark:bg-black shadow-2xl mb-8 print:shadow-none print:border-2">
-          
-          {/* DO Header */}
-          <div className="flex justify-between items-start border-b-2 border-black dark:border-white pb-6 mb-6">
+        {/* PAGE 1: DO INVOICE */}
+        <div className="pdf-page-1 border-4 border-black p-8 rounded-lg bg-white text-black shadow-2xl mb-8 print:shadow-none print:border-2 print:rounded-none print:p-6 print:mb-0">
+          <div className="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
             <div>
               <h1 className="text-3xl font-extrabold uppercase tracking-wide">Delivery Order</h1>
-              <p className="text-sm opacity-75">Camera Rental Shop Solution</p>
+              <p className="text-sm text-gray-600">Camera Rental Shop Solution</p>
             </div>
             <div className="text-right">
-              <p className="font-bold text-lg">{doNumber}</p>
-              <p className="text-xs opacity-60">Date: {currentDate}</p>
-              <span className="inline-block mt-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs font-bold px-3 py-1 rounded-full border border-green-400">
+              <p className="font-bold text-lg">{createdBooking.doNumber}</p>
+              <p className="text-xs text-gray-500">Date: {new Date(createdBooking.createdAt).toLocaleDateString()}</p>
+              <span className="inline-block mt-2 text-xs font-bold px-3 py-1 rounded-full border bg-green-100 text-green-800 border-green-400">
                 STATUS: CONFIRMED
               </span>
             </div>
           </div>
 
-          {/* Customer & Payment Info Box */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 border-2 border-black dark:border-white rounded-lg bg-gray-50 dark:bg-gray-900 text-sm">
+          <div className="grid grid-cols-2 gap-4 mb-6 p-4 border-2 border-black rounded bg-gray-50 text-xs">
             <div>
-              <p className="font-bold text-xs opacity-60 uppercase">Customer Details</p>
-              <p className="font-bold text-base mt-1">{customerName}</p>
-              <p>IC / Passport: {identityNo}</p>
-              <p>Phone: {phone}</p>
-              {email && <p>Email: {email}</p>}
+              <p className="font-bold uppercase text-gray-500 text-[10px]">Customer Details</p>
+              <p className="font-bold text-sm mt-0.5">{createdBooking.customerName}</p>
+              <p>IC / Passport: {createdBooking.identityNo}</p>
+              <p>Phone: {createdBooking.phone}</p>
+              {createdBooking.email && <p>Email: {createdBooking.email}</p>}
             </div>
             <div>
-              <p className="font-bold text-xs opacity-60 uppercase">Fulfillment & Payment</p>
-              <p className="font-bold text-base mt-1">
-                {deliveryMethod === "Delivery" ? "Delivery to Site" : "Self Pickup"}
-              </p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 font-bold mt-1">
-                Payment Method: {paymentMethod}
-              </p>
-              {deliveryMethod === "Delivery" ? (
-                <p className="mt-1 font-medium text-xs">{address}</p>
-              ) : (
-                <p className="mt-1 opacity-75 text-xs">Self-pickup at Store</p>
-              )}
-              {notes && <p className="mt-2 text-xs opacity-60">Note: {notes}</p>}
+              <p className="font-bold uppercase text-gray-500 text-[10px]">Fulfillment Details</p>
+              <p className="font-bold text-sm mt-0.5">{createdBooking.deliveryMethod}</p>
+              {createdBooking.address && <p className="text-gray-600">Address: {createdBooking.address}</p>}
+              <p className="text-blue-600 font-bold mt-1">Payment Method: {createdBooking.paymentMethod}</p>
+              {createdBooking.notes && <p className="mt-1 text-gray-500">Note: {createdBooking.notes}</p>}
             </div>
           </div>
 
-          {/* Line Items Table */}
           <div className="overflow-x-auto mb-6">
-            <table className="w-full text-left text-sm border-collapse">
+            <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b-2 border-black dark:border-white">
+                <tr className="border-b-2 border-black">
                   <th className="py-2">Item Description</th>
                   <th className="py-2 text-center">Qty</th>
                   <th className="py-2 text-center">Rental Period</th>
@@ -162,381 +242,349 @@ export default function CheckoutPage() {
                 </tr>
               </thead>
               <tbody>
-                {cart.map((booking, i) => {
-                  const { days, totalPrice, qty } = getRentalDetails(
-                    booking.startDate,
-                    booking.endDate,
-                    booking.item.dailyRate,
-                    booking.quantity
-                  );
+                {orderedItems.map((c: any, i: number) => {
+                  const days = calcDays(c.startDate, c.endDate);
+                  const sub = calcSubtotal(c);
+
                   return (
-                    <tr key={i} className="border-b border-gray-200 dark:border-gray-800">
-                      <td className="py-3 font-semibold">
-                        {booking.item.name}
-                        <div className="text-xs font-normal opacity-60">S/N: {booking.item.serialNumber || "N/A"}</div>
+                    <tr key={i} className="border-b border-gray-300">
+                      <td className="py-2.5 font-semibold">
+                        {c.item?.name || "Equipment"}
+                        <div className="text-[10px] text-gray-500">
+                          S/N: {c.item?.serialNumber || "N/A"}
+                        </div>
                       </td>
-                      <td className="py-3 text-center">{qty}</td>
-                      <td className="py-3 text-center text-xs">
-                        {booking.startDate} to {booking.endDate} ({days} {days === 1 ? 'day' : 'days'})
+                      <td className="py-2.5 text-center">{c.quantity}</td>
+                      <td className="py-2.5 text-center text-[11px]">
+                        {c.startDate} to {c.endDate} ({days} day{days > 1 ? "s" : ""})
                       </td>
-                      <td className="py-3 text-right font-bold">RM {totalPrice.toFixed(2)}</td>
+                        <td className="py-2.5 text-right font-bold">RM {sub.toFixed(2)}</td>
                     </tr>
                   );
                 })}
-
-                {/* Additional Delivery Charge Line Item */}
-                {deliveryMethod === "Delivery" && (
-                  <tr className="border-b border-gray-200 dark:border-gray-800 bg-blue-50/50 dark:bg-blue-950/30">
-                    <td className="py-3 font-bold text-blue-600 dark:text-blue-400">
-                      Site Delivery & Transport Service
-                    </td>
-                    <td className="py-3 text-center">1</td>
-                    <td className="py-3 text-center text-xs">Fixed Fee</td>
-                    <td className="py-3 text-right font-bold text-blue-600 dark:text-blue-400">
-                      RM {deliveryFee.toFixed(2)}
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
 
-          {/* Breakdown & Total Banner */}
-          <div className="p-4 border-2 border-black dark:border-white rounded-lg bg-black text-white dark:bg-white dark:text-black mb-2">
-            <div className="flex justify-between items-center text-sm opacity-80 mb-1">
-              <span>Equipment Rental Subtotal:</span>
-              <span>RM {rentalSubtotal.toFixed(2)}</span>
+          {deliveryFee > 0 && (
+            <div className="flex justify-between text-xs font-bold mb-2 px-1">
+              <span>Site Delivery Fee:</span>
+              <span>RM {deliveryFee.toFixed(2)}</span>
             </div>
-            {deliveryMethod === "Delivery" && (
-              <div className="flex justify-between items-center text-sm opacity-80 mb-2">
-                <span>Site Delivery Fee:</span>
-                <span>RM {deliveryFee.toFixed(2)}</span>
-              </div>
-            )}
-            <div className="flex justify-between items-center pt-2 border-t border-gray-700 dark:border-gray-300">
-              <span className="text-lg font-bold">Grand Total Payable:</span>
-              <span className="text-2xl font-extrabold">RM {grandTotal.toFixed(2)}</span>
+          )}
+
+          <div className="p-4 border-2 border-black rounded bg-black text-white">
+            <div className="flex justify-between items-center text-base font-bold">
+              <span>Grand Total Payable:</span>
+              <span className="text-2xl font-extrabold">RM {createdBooking.totalPrice.toFixed(2)}</span>
             </div>
           </div>
-          <p className="text-right text-xs opacity-60 mt-2">Page 1 of 2 — Delivery Order Invoice</p>
+          <p className="text-right text-[10px] text-gray-400 mt-2">Page 1 of 2 — Delivery Order Invoice</p>
         </div>
 
-        {/* PAGE 2: BACK PAGE - HANDOVER CHECKLIST, TERMS & SIGNATURES */}
-        <div className="border-4 border-black dark:border-white p-8 rounded-lg bg-white dark:bg-black shadow-2xl print:shadow-none print:border-2">
-          <div className="flex justify-between items-center border-b-2 border-black dark:border-white pb-4 mb-6">
-            <div>
-              <h2 className="text-2xl font-extrabold uppercase">Equipment Handover & Inspection</h2>
-              <p className="text-xs opacity-75">Delivery Order Back Page — Ref: {doNumber}</p>
-            </div>
-            <div className="text-right text-xs font-bold">
-              <p>Customer: {customerName}</p>
-              <p className="text-blue-600 dark:text-blue-400 mt-0.5">Paid via: {paymentMethod}</p>
-            </div>
-          </div>
+        {/* PAGE 2: HANDOVER CHECKLIST & SIGNATURES */}
+        <div className="pdf-page-2 border-4 border-black p-8 rounded-lg bg-white text-black shadow-2xl print:shadow-none print:border-2 print:rounded-none print:p-6">
+          <h2 className="text-xl font-extrabold uppercase border-b-2 border-black pb-3 mb-6">
+            Equipment Handover & Inspection (Ref: {createdBooking.doNumber})
+          </h2>
 
-          {/* Handover & Condition Checklist Table */}
-          <div className="mb-6">
-            <h3 className="text-sm font-bold uppercase mb-2">1. Outgoing / Returning Condition Checklist</h3>
-            <table className="w-full text-left text-xs border-2 border-black dark:border-white border-collapse">
+          <div className="mb-8">
+            <table className="w-full text-left text-xs border-2 border-black border-collapse">
               <thead>
-                <tr className="bg-gray-100 dark:bg-gray-900 border-b-2 border-black dark:border-white">
-                  <th className="p-2 border-r border-black dark:border-white">Equipment Name & S/N</th>
-                  <th className="p-2 text-center border-r border-black dark:border-white w-24">Glass / Lens Clean</th>
-                  <th className="p-2 text-center border-r border-black dark:border-white w-24">Power / Cable OK</th>
-                  <th className="p-2 text-center border-r border-black dark:border-white w-24">Case & Accessories</th>
-                  <th className="p-2 text-center w-28">Return Sign-off</th>
+                <tr className="bg-gray-100 border-b-2 border-black">
+                  <th className="p-2 border-r border-black">Equipment Name</th>
+                  <th className="p-2 text-center border-r border-black">Glass/Lens Clean</th>
+                  <th className="p-2 text-center border-r border-black">Power/Cable OK</th>
+                  <th className="p-2 text-center">Return Sign-off</th>
                 </tr>
               </thead>
               <tbody>
-                {cart.map((booking, i) => (
-                  <tr key={i} className="border-b border-gray-300 dark:border-gray-800">
-                    <td className="p-2 border-r border-gray-300 dark:border-gray-800 font-bold">
-                      {booking.item.name} ({booking.quantity || 1}x)
-                      <span className="block font-normal opacity-60">S/N: {booking.item.serialNumber || "N/A"}</span>
+                {orderedItems.map((c: any, i: number) => (
+                  <tr key={i} className="border-b border-gray-300">
+                    <td className="p-2 border-r border-gray-300 font-bold">
+                      {c.item?.name || "Equipment"} ({c.quantity}x)
                     </td>
-                    <td className="p-2 text-center border-r border-gray-300 dark:border-gray-800">☐ Pass</td>
-                    <td className="p-2 text-center border-r border-gray-300 dark:border-gray-800">☐ Pass</td>
-                    <td className="p-2 text-center border-r border-gray-300 dark:border-gray-800">☐ Pass</td>
-                    <td className="p-2 text-center opacity-40">☐ Received</td>
+                    <td className="p-2 text-center border-r border-gray-300">☐ Pass</td>
+                    <td className="p-2 text-center border-r border-gray-300">☐ Pass</td>
+                    <td className="p-2 text-center text-gray-400">☐ Received</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          {/* Rental Terms & Conditions */}
-          <div className="mb-6 text-xs leading-relaxed p-4 border-2 border-black dark:border-white rounded-lg bg-gray-50 dark:bg-gray-900">
-            <h3 className="font-bold text-sm uppercase mb-2">2. Standard Rental Terms & Conditions</h3>
-            <ol className="list-decimal list-inside space-y-1 opacity-80">
-              <li><strong>Equipment Inspection:</strong> The renter acknowledges receipt of equipment in good working order and clean condition.</li>
-              <li><strong>Loss or Damage:</strong> The hirer assumes full liability for loss, theft, or damage during the rental period. Replacement cost or repair fees will be charged accordingly.</li>
-              <li><strong>Late Return Surcharge:</strong> Gear returned past the agreed return date will incur an additional daily rental charge plus a 20% late penalty.</li>
-              <li><strong>Sub-letting Prohibition:</strong> Equipment must not be sub-let or operated by unauthorized third parties without prior written consent.</li>
-            </ol>
-          </div>
-
-          {/* Signatures & Approvals */}
-          <div className="grid grid-cols-2 gap-8 pt-4 border-t-2 border-black dark:border-white text-xs">
+          <div className="grid grid-cols-2 gap-8 pt-8 border-t-2 border-black text-xs">
             <div>
-              <p className="font-bold uppercase mb-8">Issued By (Rental Representative):</p>
-              <div className="border-b-2 border-black dark:border-white w-48 mb-2"></div>
-              <p className="font-bold">Authorized Signature & Stamp</p>
-              <p className="opacity-60 mt-1">Date: {currentDate}</p>
+              <p className="font-bold uppercase mb-12">Customer Acknowledgment & Signature</p>
+              <div className="border-b border-black mb-2"></div>
+              <p className="font-bold">{createdBooking.customerName}</p>
+              <p className="text-gray-500">IC: {createdBooking.identityNo}</p>
             </div>
             <div>
-              <p className="font-bold uppercase mb-8">Received & Accepted By (Renter):</p>
-              <div className="border-b-2 border-black dark:border-white w-48 mb-2"></div>
-              <p className="font-bold">{customerName}</p>
-              <p className="opacity-60 mt-1">IC / Passport: {identityNo}</p>
+              <p className="font-bold uppercase mb-12">Shop Inspector Sign-Off</p>
+              <div className="border-b border-black mb-2"></div>
+              <p className="font-bold">Authorized Staff Signature</p>
+              <p className="text-gray-500">Camera Rental Shop Inspector</p>
             </div>
           </div>
 
-          <p className="text-right text-xs opacity-60 mt-6">Page 2 of 2 — Equipment Handover & Rental Agreement</p>
+          <p className="text-right text-[10px] text-gray-400 mt-8">Page 2 of 2 — Equipment Handover Agreement</p>
         </div>
-
       </main>
     );
   }
 
+  // --- CHECKOUT FORM & CART VIEW ---
   return (
-    <main className="p-8 font-sans max-w-5xl mx-auto min-h-screen text-black dark:text-white">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Delivery Order Checkout</h1>
-        <Link
-          href="/"
-          className="text-sm font-bold border-2 border-black dark:border-white px-4 py-2 rounded-lg hover:opacity-75 transition-opacity"
-        >
-          ← Back to Shop
-        </Link>
+    <main className="p-8 font-sans max-w-6xl mx-auto min-h-screen text-black dark:text-white">
+      <div className="flex justify-between items-center mb-6 border-b-2 border-black dark:border-white pb-4">
+        <div>
+          <h1 className="text-3xl font-extrabold uppercase tracking-wide">Delivery Order Checkout</h1>
+          <p className="text-sm opacity-75">Review equipment, select/deselect items, and confirm fulfillment details.</p>
+        </div>
+        <div className="flex gap-2">
+          {cart.length > 0 && (
+            <button
+              onClick={clearCart}
+              className="bg-red-600 text-white font-bold px-3 py-2 rounded-lg text-xs hover:bg-red-700 cursor-pointer"
+            >
+              🗑️ Clear Cart
+            </button>
+          )}
+          <Link
+            href="/"
+            className="border-2 border-black dark:border-white px-4 py-2 rounded-lg text-xs font-bold hover:opacity-75"
+          >
+            ← Back to Shop
+          </Link>
+        </div>
       </div>
 
       {cart.length === 0 ? (
-        <div className="p-8 border-2 border-black dark:border-white rounded-lg text-center opacity-60">
-          <p className="text-lg mb-4">Your cart is empty.</p>
+        <div className="p-12 border-2 border-black dark:border-white rounded-lg text-center opacity-60 my-8">
+          <p className="text-xl font-bold mb-2">Your Rental Cart is Empty 🛒</p>
+          <p className="text-xs mb-4">Browse our equipment catalog to select cinema cameras, lighting, and grip gear.</p>
           <Link
             href="/"
-            className="inline-block bg-black text-white dark:bg-white dark:text-black px-6 py-2 rounded-lg font-bold"
+            className="bg-black text-white dark:bg-white dark:text-black px-4 py-2 rounded-lg text-xs font-extrabold uppercase"
           >
-            Browse Equipment
+            Explore Catalog
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
-          {/* Customer Information Form */}
-          <form onSubmit={handleSubmitOrder} className="p-6 border-2 border-black dark:border-white rounded-lg bg-white dark:bg-black flex flex-col gap-4">
-            <h2 className="text-xl font-bold border-b-2 border-black dark:border-white pb-2 mb-2">
-              Customer & Delivery Details
-            </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-7">
+            <form onSubmit={handleSubmitOrder} className="space-y-4 text-xs font-bold border-2 border-black dark:border-white p-6 rounded-lg bg-white dark:bg-black shadow-lg">
+              <h2 className="text-lg font-extrabold uppercase border-b-2 border-black dark:border-white pb-2 mb-4">
+                Customer & Delivery Details
+              </h2>
 
-            <div>
-              <label className="text-xs font-bold uppercase block mb-1">Full Name *</label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Bryan Lee"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                className="w-full border-2 border-black dark:border-white rounded p-2 text-sm bg-white dark:bg-black outline-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-bold uppercase block mb-1">Phone Number *</label>
-                <input
-                  type="tel"
-                  required
-                  placeholder="e.g. 012-3456789"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full border-2 border-black dark:border-white rounded p-2 text-sm bg-white dark:bg-black outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold uppercase block mb-1">IC / Passport No. *</label>
+                <label className="block mb-1">Full Name *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. 980101-10-5555"
-                  value={identityNo}
-                  onChange={(e) => setIdentityNo(e.target.value)}
-                  className="w-full border-2 border-black dark:border-white rounded p-2 text-sm bg-white dark:bg-black outline-none"
+                  placeholder="e.g. Alex Tan"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className="w-full border-2 border-black dark:border-white rounded p-2.5 bg-white dark:bg-black outline-none font-medium text-sm"
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="text-xs font-bold uppercase block mb-1">Email (Optional)</label>
-              <input
-                type="email"
-                placeholder="e.g. bryan@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full border-2 border-black dark:border-white rounded p-2 text-sm bg-white dark:bg-black outline-none"
-              />
-            </div>
-
-            {/* FULFILLMENT METHOD */}
-            <div>
-              <label className="text-xs font-bold uppercase block mb-1">Fulfillment Option</label>
-              <div className="flex gap-4 mb-2">
-                <label className="flex items-center gap-2 cursor-pointer font-bold text-sm">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block mb-1">Phone Number *</label>
                   <input
-                    type="radio"
-                    name="method"
-                    value="Pickup"
-                    checked={deliveryMethod === "Pickup"}
-                    onChange={() => setDeliveryMethod("Pickup")}
+                    type="text"
+                    required
+                    placeholder="e.g. 0123456789"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full border-2 border-black dark:border-white rounded p-2.5 bg-white dark:bg-black outline-none font-medium text-sm"
                   />
-                  Self Pickup (Free)
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer font-bold text-sm">
+                </div>
+                <div>
+                  <label className="block mb-1">IC / Passport Number *</label>
                   <input
-                    type="radio"
-                    name="method"
-                    value="Delivery"
-                    checked={deliveryMethod === "Delivery"}
-                    onChange={() => setDeliveryMethod("Delivery")}
+                    type="text"
+                    required
+                    placeholder="e.g. 900101-14-5566"
+                    value={identityNo}
+                    onChange={(e) => setIdentityNo(e.target.value)}
+                    className="w-full border-2 border-black dark:border-white rounded p-2.5 bg-white dark:bg-black outline-none font-medium text-sm"
                   />
-                  Delivery to Site (+RM 50.00)
-                </label>
+                </div>
               </div>
-            </div>
 
-            {deliveryMethod === "Delivery" && (
-              <div className="p-3 bg-blue-50 dark:bg-blue-950/40 rounded-lg border border-blue-200 dark:border-blue-800">
-                <label className="text-xs font-bold uppercase block mb-1">Delivery Address *</label>
-                <textarea
-                  required
-                  rows={2}
-                  placeholder="Enter full delivery location..."
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="w-full border-2 border-black dark:border-white rounded p-2 text-sm bg-white dark:bg-black outline-none"
+              <div>
+                <label className="block mb-1">Email Address (Optional)</label>
+                <input
+                  type="email"
+                  placeholder="alex@gmail.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full border-2 border-black dark:border-white rounded p-2.5 bg-white dark:bg-black outline-none font-medium text-sm"
                 />
-                <p className="text-xs text-blue-600 dark:text-blue-400 font-bold mt-2">
-                  ✓ Fixed Delivery Charge: RM 50.00 will be added to total
-                </p>
               </div>
-            )}
 
-            {/* PAYMENT METHOD SELECTOR */}
-            <div>
-              <label className="text-xs font-bold uppercase block mb-1">Payment Method *</label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  "DuitNow QR / FPX",
-                  "Credit / Debit Card",
-                  "Bank Transfer",
-                  "Cash on Pickup/Delivery"
-                ].map((method) => (
-                  <label
-                    key={method}
-                    onClick={() => setPaymentMethod(method)}
-                    className={`p-2.5 rounded-lg border-2 text-xs font-bold cursor-pointer transition-colors flex items-center gap-2 ${
-                      paymentMethod === method
-                        ? "border-blue-600 bg-blue-50 text-blue-900 dark:bg-blue-950 dark:text-blue-200"
-                        : "border-black dark:border-white bg-white dark:bg-black"
-                    }`}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block mb-1">Fulfillment Option</label>
+                  <select
+                    value={deliveryMethod}
+                    onChange={(e) => setDeliveryMethod(e.target.value)}
+                    className="w-full border-2 border-black dark:border-white rounded p-2.5 bg-white dark:bg-black outline-none font-bold text-xs"
                   >
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value={method}
-                      checked={paymentMethod === method}
-                      onChange={() => setPaymentMethod(method)}
-                    />
-                    {method}
-                  </label>
-                ))}
+                    <option value="Self Pickup (Free)">Self Pickup (Free)</option>
+                    <option value="Site Delivery (+RM 50.00)">Site Delivery (+RM 50.00)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block mb-1">Payment Method</label>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="w-full border-2 border-black dark:border-white rounded p-2.5 bg-white dark:bg-black outline-none font-bold text-xs"
+                  >
+                    <option value="DuitNow QR / FPX">DuitNow QR / FPX</option>
+                    <option value="Credit / Debit Card">Credit / Debit Card</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Cash on Pickup">Cash on Pickup</option>
+                  </select>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className="text-xs font-bold uppercase block mb-1">Special Notes / Requests</label>
-              <textarea
-                rows={2}
-                placeholder="e.g. Request extra battery, late return notes..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="w-full border-2 border-black dark:border-white rounded p-2 text-sm bg-white dark:bg-black outline-none"
-              />
-            </div>
+              {deliveryMethod.includes("Delivery") && (
+                <div>
+                  <label className="block mb-1">Delivery Address *</label>
+                  <textarea
+                    rows={2}
+                    required
+                    placeholder="Enter production set address..."
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full border-2 border-black dark:border-white rounded p-2 bg-white dark:bg-black outline-none font-medium"
+                  />
+                </div>
+              )}
 
-            <button
-              type="submit"
-              className="mt-4 bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors w-full cursor-pointer text-base"
-            >
-              Generate Delivery Order (DO)
-            </button>
-          </form>
+              <div>
+                <label className="block mb-1">Special Notes / Requests</label>
+                <textarea
+                  rows={2}
+                  placeholder="Additional production requests..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full border-2 border-black dark:border-white rounded p-2 bg-white dark:bg-black outline-none font-medium"
+                />
+              </div>
 
-          {/* Order Summary Side Card */}
-          <div className="p-6 border-2 border-black dark:border-white rounded-lg bg-gray-50 dark:bg-gray-900 flex flex-col justify-between">
-            <div>
-              <h2 className="text-xl font-bold border-b-2 border-black dark:border-white pb-2 mb-4">
-                Order Summary ({cart.length} item{cart.length > 1 ? "s" : ""})
-              </h2>
+              <button
+                type="submit"
+                disabled={loading || selectedCartItems.length === 0}
+                className="w-full bg-black text-white dark:bg-white dark:text-black py-3 rounded-lg font-extrabold text-sm uppercase tracking-wider hover:opacity-80 transition-opacity cursor-pointer disabled:opacity-50 mt-4"
+              >
+                {loading ? "Generating Delivery Order..." : `Generate Delivery Order (RM ${grandTotal.toFixed(2)})`}
+              </button>
+            </form>
+          </div>
 
-              <div className="flex flex-col gap-3 mb-6">
-                {cart.map((booking, index) => {
-                  const { days, totalPrice, qty } = getRentalDetails(
-                    booking.startDate,
-                    booking.endDate,
-                    booking.item.dailyRate,
-                    booking.quantity
-                  );
+          <div className="lg:col-span-5">
+            <div className="border-2 border-black dark:border-white p-6 rounded-lg bg-white dark:bg-black shadow-lg">
+              <div className="flex justify-between items-center border-b-2 border-black dark:border-white pb-3 mb-4">
+                <h2 className="text-lg font-extrabold uppercase">
+                  Cart Items ({selectedCartItems.length} of {cart.length} Selected)
+                </h2>
+              </div>
+
+              <div className="space-y-3 mb-6">
+                {cart.map((c, idx) => {
+                  const days = calcDays(c.startDate, c.endDate);
+                  const sub = calcSubtotal(c);
 
                   return (
-                    <div key={index} className="flex justify-between items-start text-sm border-b border-gray-200 dark:border-gray-800 pb-2">
-                      <div>
-                        <p className="font-bold">{booking.item.name} × {qty}</p>
-                        <p className="text-xs opacity-75 font-semibold text-gray-600 dark:text-gray-400">
-                          S/N: {booking.item.serialNumber || "N/A"}
-                        </p>
-                        <p className="text-xs opacity-60">{booking.startDate} → {booking.endDate} ({days} days)</p>
+                    <div
+                      key={idx}
+                      className={`p-3 border-2 rounded-lg transition-all ${
+                        c.selected
+                          ? "border-black dark:border-white bg-gray-50 dark:bg-gray-900"
+                          : "border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-950 opacity-50"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={c.selected}
+                          onChange={() => toggleItemSelection(idx)}
+                          className="mt-1 w-4 h-4 rounded cursor-pointer accent-black dark:accent-white"
+                        />
+
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                            <h3 className="font-bold text-sm">{c.item?.name || "Equipment"}</h3>
+                            <button
+                              type="button"
+                              onClick={() => removeItem(idx)}
+                              className="text-red-600 hover:text-red-800 text-xs font-bold cursor-pointer"
+                              title="Delete item"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+
+                          <p className="text-xs opacity-60 mt-0.5">
+                            {c.startDate} → {c.endDate} ({days} day{days > 1 ? "s" : ""})
+                          </p>
+
+                          <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-200 dark:border-gray-800 text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="opacity-60 text-[11px]">Qty:</span>
+                              <div className="flex items-center border border-black dark:border-white rounded overflow-hidden">
+                                <button
+                                  type="button"
+                                  onClick={() => updateQuantity(idx, -1)}
+                                  className="px-2 py-0.5 bg-gray-200 dark:bg-gray-800 font-extrabold hover:bg-gray-300 dark:hover:bg-gray-700 cursor-pointer"
+                                >
+                                  -
+                                </button>
+                                <span className="px-2.5 font-bold text-xs">{c.quantity}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => updateQuantity(idx, 1)}
+                                  className="px-2 py-0.5 bg-gray-200 dark:bg-gray-800 font-extrabold hover:bg-gray-300 dark:hover:bg-gray-700 cursor-pointer"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+
+                            <span className="font-extrabold text-blue-600 dark:text-blue-400">
+                              RM {sub.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <span className="font-bold whitespace-nowrap ml-2">RM {totalPrice.toFixed(2)}</span>
                     </div>
                   );
                 })}
-
-                {/* Delivery Fee Line item */}
-                {deliveryMethod === "Delivery" && (
-                  <div className="flex justify-between items-center text-sm border-b border-gray-200 dark:border-gray-800 pb-2 text-blue-600 dark:text-blue-400 font-bold">
-                    <div>
-                      <p>Delivery Charge</p>
-                      <p className="text-xs font-normal opacity-75">Site transport surcharge</p>
-                    </div>
-                    <span>RM {deliveryFee.toFixed(2)}</span>
-                  </div>
-                )}
               </div>
-            </div>
 
-            <div className="border-t-2 border-black dark:border-white pt-4">
-              <div className="flex justify-between items-center text-xs opacity-75 mb-1">
-                <span>Rental Subtotal:</span>
-                <span>RM {rentalSubtotal.toFixed(2)}</span>
-              </div>
-              {deliveryMethod === "Delivery" && (
-                <div className="flex justify-between items-center text-xs opacity-75 mb-1 text-blue-600 dark:text-blue-400 font-bold">
-                  <span>Delivery Fee:</span>
-                  <span>+ RM {deliveryFee.toFixed(2)}</span>
+              {deliveryFee > 0 && (
+                <div className="flex justify-between text-xs font-bold mb-3 px-1">
+                  <span>Site Delivery Fee:</span>
+                  <span>RM {deliveryFee.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between items-center text-xs opacity-75 mb-2 font-bold text-gray-700 dark:text-gray-300">
-                <span>Payment Method:</span>
-                <span>{paymentMethod}</span>
-              </div>
-              <div className="flex justify-between items-center text-xl font-extrabold border-t border-gray-300 dark:border-gray-700 pt-2">
-                <span>Total:</span>
-                <span className="text-blue-600 dark:text-blue-400">RM {grandTotal.toFixed(2)}</span>
+
+              <div className="p-4 border-2 border-black dark:border-white rounded-lg bg-black text-white dark:bg-white dark:text-black">
+                <div className="flex justify-between items-center text-sm font-bold">
+                  <span>Selected Total:</span>
+                  <span className="text-xl font-extrabold">RM {grandTotal.toFixed(2)}</span>
+                </div>
               </div>
             </div>
           </div>
-
         </div>
       )}
     </main>
