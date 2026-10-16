@@ -19,8 +19,8 @@ export default function AdminDashboardPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<any | null>(null);
 
-  // Add Item to DO Modal States
-  const [addItemBooking, setAddItemBooking] = useState<any | null>(null);
+  // Edit DO Gear Modal States
+  const [editBookingModal, setEditBookingModal] = useState<any | null>(null);
   const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
   const [addItemQty, setAddItemQty] = useState("1");
   const [submittingAddItem, setSubmittingAddItem] = useState(false);
@@ -80,7 +80,14 @@ export default function AdminDashboardPage() {
     try {
       const res = await fetch("/api/bookings");
       const data = await res.json();
-      if (data.success) setBookings(data.bookings || []);
+      if (data.success) {
+        setBookings(data.bookings || []);
+        // Keep active modal synced with latest data
+        if (editBookingModal) {
+          const updatedCurrent = (data.bookings || []).find((b: any) => b.id === editBookingModal.id);
+          if (updatedCurrent) setEditBookingModal(updatedCurrent);
+        }
+      }
     } catch (err) {
       console.error("Failed to load admin bookings", err);
     } finally {
@@ -202,11 +209,11 @@ export default function AdminDashboardPage() {
   // --- ADD ITEM TO DO HANDLER ---
   const handleAddItemToBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!addItemBooking || !selectedEquipmentId) return;
+    if (!editBookingModal || !selectedEquipmentId) return;
 
     setSubmittingAddItem(true);
     try {
-      const res = await fetch(`/api/bookings/${addItemBooking.id}/items`, {
+      const res = await fetch(`/api/bookings/${editBookingModal.id}/items`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -218,8 +225,6 @@ export default function AdminDashboardPage() {
 
       if (data.success) {
         alert("Extra gear added to Delivery Order!");
-        setAddItemBooking(null);
-        setSelectedEquipmentId("");
         setAddItemQty("1");
         fetchBookings();
         fetchEquipment();
@@ -231,6 +236,29 @@ export default function AdminDashboardPage() {
       alert("Error adding item to DO.");
     } finally {
       setSubmittingAddItem(false);
+    }
+  };
+
+  // --- REMOVE ITEM FROM DO HANDLER ---
+  const handleRemoveItemFromBooking = async (bookingId: string, itemId: string, itemName: string) => {
+    if (!confirm(`Are you sure you want to remove "${itemName}" from this Delivery Order?`)) return;
+
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}/items?itemId=${itemId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        alert("Item removed from Delivery Order!");
+        fetchBookings();
+        fetchEquipment();
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      console.error("Failed to remove item", err);
+      alert("Error removing item from DO.");
     }
   };
 
@@ -572,7 +600,7 @@ export default function AdminDashboardPage() {
                       <td className="p-3 max-w-xs">
                         <ul className="space-y-1">
                           {(b.items || []).map((item: any, idx: number) => (
-                            <li key={idx} className="font-semibold">
+                            <li key={idx} className="font-semibold text-[11px]">
                               • {item.equipment?.name || "Equipment"} ({item.quantity}x)
                             </li>
                           ))}
@@ -607,12 +635,12 @@ export default function AdminDashboardPage() {
                           <div className="flex justify-center gap-1.5 flex-wrap">
                             <button
                               onClick={() => {
-                                setAddItemBooking(b);
+                                setEditBookingModal(b);
                                 if (equipment.length > 0) setSelectedEquipmentId(equipment[0].id);
                               }}
                               className="bg-blue-600 text-white font-extrabold px-2.5 py-1.5 rounded-lg text-[10px] uppercase hover:bg-blue-700 transition-colors cursor-pointer shadow"
                             >
-                              Add Item ➕
+                              Edit Items ⚙️
                             </button>
                             <button
                               onClick={() => handleMarkReturned(b.id)}
@@ -733,7 +761,7 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* EDIT / ADD MODAL */}
+      {/* EDIT / ADD INVENTORY ITEM MODAL */}
       {showModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-white dark:bg-black border-4 border-black dark:border-white p-6 rounded-xl max-w-2xl w-full shadow-2xl my-8">
@@ -915,25 +943,71 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* ADD EXTRA ITEM TO DO MODAL */}
-      {addItemBooking && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-black border-4 border-black dark:border-white p-6 rounded-xl max-w-md w-full shadow-2xl">
+      {/* UNIFIED EDIT DELIVERY ORDER ITEMS MODAL */}
+      {editBookingModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white dark:bg-black border-4 border-black dark:border-white p-6 rounded-xl max-w-lg w-full shadow-2xl my-6">
+            
+            {/* MODAL HEADER */}
             <div className="flex justify-between items-center border-b-2 border-black dark:border-white pb-3 mb-4">
               <div>
-                <h3 className="text-lg font-black uppercase">Append Gear to DO</h3>
-                <p className="text-xs opacity-70 font-mono">{addItemBooking.doNumber} • {addItemBooking.customerName}</p>
+                <h3 className="text-lg font-black uppercase flex items-center gap-2">
+                  <span>⚙️</span> Modify Delivery Order Items
+                </h3>
+                <p className="text-xs opacity-70 font-mono mt-0.5">
+                  {editBookingModal.doNumber} • {editBookingModal.customerName}
+                </p>
               </div>
               <button
                 type="button"
-                onClick={() => setAddItemBooking(null)}
+                onClick={() => setEditBookingModal(null)}
                 className="font-black text-sm px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleAddItemToBooking} className="space-y-4 text-xs font-bold">
+            {/* SECTION 1: CURRENT ITEMS IN DO (WITH DESELECT / REMOVE) */}
+            <div className="mb-6">
+              <h4 className="text-xs font-black uppercase tracking-wider mb-2 opacity-80">
+                Current Equipment in Order ({editBookingModal.items?.length || 0})
+              </h4>
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {(editBookingModal.items || []).map((item: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-2.5 border-2 border-gray-200 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-900"
+                  >
+                    <div>
+                      <p className="font-extrabold text-xs">{item.equipment?.name || "Equipment"}</p>
+                      <p className="text-[10px] opacity-60 font-mono">
+                        Qty: {item.quantity}x • Subtotal: RM {(item.subtotal || 0).toFixed(2)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleRemoveItemFromBooking(
+                          editBookingModal.id,
+                          item.id,
+                          item.equipment?.name || "Item"
+                        )
+                      }
+                      className="bg-red-600 text-white font-bold text-[10px] uppercase px-2.5 py-1 rounded-md hover:bg-red-700 transition-colors cursor-pointer shadow-sm"
+                    >
+                      Deselect ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* SECTION 2: ADD NEW ITEM TO DO */}
+            <form onSubmit={handleAddItemToBooking} className="border-t-2 border-black dark:border-white pt-4 space-y-4 text-xs font-bold">
+              <h4 className="text-xs font-black uppercase tracking-wider opacity-80">
+                Add Additional Equipment
+              </h4>
+
               <div>
                 <label className="block mb-1 uppercase">Select Equipment *</label>
                 <select
@@ -961,23 +1035,24 @@ export default function AdminDashboardPage() {
                 />
               </div>
 
-              <div className="flex gap-3 pt-3 border-t border-gray-200 dark:border-gray-800">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setAddItemBooking(null)}
+                  onClick={() => setEditBookingModal(null)}
                   className="flex-1 border-2 border-black dark:border-white py-2.5 rounded-lg font-bold hover:bg-gray-100 dark:hover:bg-gray-900 cursor-pointer uppercase text-xs"
                 >
-                  Cancel
+                  Done Editing
                 </button>
                 <button
                   type="submit"
                   disabled={submittingAddItem}
                   className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-extrabold uppercase hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 text-xs shadow-md"
                 >
-                  {submittingAddItem ? "Appending..." : "Add to Order"}
+                  {submittingAddItem ? "Adding..." : "Add to Order ➕"}
                 </button>
               </div>
             </form>
+
           </div>
         </div>
       )}
