@@ -16,7 +16,6 @@ export async function PATCH(
       );
     }
 
-    // Update booking status to CANCELLED in Turso cloud
     const updatedBooking = await (prisma as any).booking.update({
       where: { id: bookingId },
       data: { status: "CANCELLED" },
