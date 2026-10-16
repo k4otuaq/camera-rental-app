@@ -62,6 +62,7 @@ export async function POST(
         where: { id: existingItem.id },
         data: {
           quantity: existingItem.quantity + Number(quantity),
+          subtotal: (existingItem.subtotal || 0) + addedPrice,
         },
       });
     } else {
@@ -72,6 +73,7 @@ export async function POST(
           quantity: Number(quantity),
           startDate: booking.startDate,
           endDate: booking.endDate,
+          subtotal: addedPrice,
         },
       });
     }
