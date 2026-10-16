@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
@@ -109,7 +109,7 @@ export default function AdminDashboardPage() {
   };
 
   // Analytics Calculations
-  const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+  const totalRevenue = bookings.reduce((sum, b) => sum + (b.status !== "CANCELLED" ? (b.totalPrice || 0) : 0), 0);
   const activeRentalsCount = bookings.filter((b) => b.status === "CONFIRMED").length;
   const returnedCount = bookings.filter((b) => b.status === "RETURNED").length;
 
@@ -167,6 +167,29 @@ export default function AdminDashboardPage() {
     } catch (err) {
       console.error("Failed to return booking", err);
       alert("Error processing return.");
+    }
+  };
+
+  // --- CANCEL ORDER HANDLER ---
+  const handleCancelOrder = async (bookingId: string) => {
+    if (!confirm("Are you sure you want to CANCEL this delivery order?")) return;
+
+    try {
+      const res = await fetch(`/api/bookings/${bookingId}/cancel`, {
+        method: "PATCH",
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        alert("Order successfully marked as CANCELLED!");
+        fetchBookings();
+        fetchEquipment();
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      console.error("Failed to cancel booking", err);
+      alert("Error processing order cancellation.");
     }
   };
 
@@ -467,6 +490,7 @@ export default function AdminDashboardPage() {
               <option value="ALL">All Order Statuses</option>
               <option value="CONFIRMED">Active (CONFIRMED)</option>
               <option value="RETURNED">Completed (RETURNED)</option>
+              <option value="CANCELLED">Cancelled (CANCELLED)</option>
             </select>
           </div>
 
@@ -525,6 +549,8 @@ export default function AdminDashboardPage() {
                           className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border ${
                             b.status === "RETURNED"
                               ? "bg-gray-200 text-gray-800 border-gray-400"
+                              : b.status === "CANCELLED"
+                              ? "bg-red-100 text-red-800 border-red-400"
                               : "bg-green-100 text-green-800 border-green-400 animate-pulse"
                           }`}
                         >
@@ -534,13 +560,23 @@ export default function AdminDashboardPage() {
                       <td className="p-3 text-center">
                         {b.status === "RETURNED" ? (
                           <span className="text-gray-400 font-bold text-[11px]">Returned ✓</span>
+                        ) : b.status === "CANCELLED" ? (
+                          <span className="text-red-500 font-bold text-[11px]">Cancelled ✕</span>
                         ) : (
-                          <button
-                            onClick={() => handleMarkReturned(b.id)}
-                            className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-3 py-1.5 rounded-lg text-[10px] uppercase hover:opacity-80 transition-opacity cursor-pointer shadow"
-                          >
-                            Mark Returned ↩
-                          </button>
+                          <div className="flex justify-center gap-1.5 flex-wrap">
+                            <button
+                              onClick={() => handleMarkReturned(b.id)}
+                              className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2.5 py-1.5 rounded-lg text-[10px] uppercase hover:opacity-80 transition-opacity cursor-pointer shadow"
+                            >
+                              Mark Returned ↩
+                            </button>
+                            <button
+                              onClick={() => handleCancelOrder(b.id)}
+                              className="bg-red-600 text-white font-extrabold px-2.5 py-1.5 rounded-lg text-[10px] uppercase hover:bg-red-700 transition-colors cursor-pointer shadow"
+                            >
+                              Cancel Order ✕
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>
