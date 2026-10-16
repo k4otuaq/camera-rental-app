@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
@@ -8,7 +10,7 @@ if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 export async function GET(req: NextRequest) {
   try {
     const query = req.nextUrl.searchParams.get("query")?.trim();
-    
+
     if (!query) {
       return NextResponse.json(
         { success: false, error: "Please provide a DO Number, Phone, or IC Number." },
