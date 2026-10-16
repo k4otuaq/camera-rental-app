@@ -71,8 +71,8 @@ export async function POST(
           bookingId,
           equipmentId,
           quantity: Number(quantity),
-          startDate: booking.startDate,
-          endDate: booking.endDate,
+          startDate: booking.startDate ? new Date(booking.startDate).toISOString() : "",
+          endDate: booking.endDate ? new Date(booking.endDate).toISOString() : "",
           subtotal: addedPrice,
         },
       });
