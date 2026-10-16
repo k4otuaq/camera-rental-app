@@ -38,7 +38,7 @@ export default function Footer() {
       </div>
 
       <div className="border-t border-gray-200 dark:border-gray-800 py-4 px-6 max-w-6xl mx-auto flex flex-wrap justify-between items-center opacity-60 text-[11px]">
-        <p>© {new Date().getFullYear()} Camera Rental Shop. All rights reserved.</p>
+       <p>© 2026 Camera Rental Shop. All rights reserved.</p>
         <Link
           href="/admin"
           className="font-bold hover:opacity-100 underline flex items-center gap-1 transition-opacity"
