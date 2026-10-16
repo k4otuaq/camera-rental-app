@@ -107,3 +107,69 @@ export async function POST(
     );
   }
 }
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
+  try {
+    const resolvedParams = await params;
+    const bookingId = resolvedParams.id;
+    const { searchParams } = new URL(req.url);
+    const itemId = searchParams.get("itemId");
+
+    if (!bookingId || !itemId) {
+      return NextResponse.json(
+        { success: false, error: "Missing bookingId or itemId" },
+        { status: 400 }
+      );
+    }
+
+    // Find item to get its subtotal
+    const item = await (prisma as any).bookingItem.findUnique({
+      where: { id: itemId },
+    });
+
+    if (!item) {
+      return NextResponse.json(
+        { success: false, error: "Booking item not found" },
+        { status: 404 }
+      );
+    }
+
+    const itemSubtotal = item.subtotal || 0;
+
+    // Delete the booking item
+    await (prisma as any).bookingItem.delete({
+      where: { id: itemId },
+    });
+
+    // Decrement parent booking total price
+    const updatedBooking = await (prisma as any).booking.update({
+      where: { id: bookingId },
+      data: {
+        totalPrice: {
+          decrement: itemSubtotal,
+        },
+      },
+      include: {
+        items: {
+          include: {
+            equipment: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Item removed from Delivery Order successfully",
+      booking: updatedBooking,
+    });
+  } catch (error: any) {
+    console.error("Error removing item from booking:", error);
+    return NextResponse.json(
+      { success: false, error: error.message || "Failed to remove item from DO" },
+      { status: 500 }
+    );
+  }
+}
