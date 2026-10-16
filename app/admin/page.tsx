@@ -19,6 +19,12 @@ export default function AdminDashboardPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<any | null>(null);
 
+  // Add Item to DO Modal States
+  const [addItemBooking, setAddItemBooking] = useState<any | null>(null);
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
+  const [addItemQty, setAddItemQty] = useState("1");
+  const [submittingAddItem, setSubmittingAddItem] = useState(false);
+
   // Search & Filter States
   const [bookingSearch, setBookingSearch] = useState("");
   const [bookingStatusFilter, setBookingStatusFilter] = useState("ALL");
@@ -190,6 +196,41 @@ export default function AdminDashboardPage() {
     } catch (err) {
       console.error("Failed to cancel booking", err);
       alert("Error processing order cancellation.");
+    }
+  };
+
+  // --- ADD ITEM TO DO HANDLER ---
+  const handleAddItemToBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addItemBooking || !selectedEquipmentId) return;
+
+    setSubmittingAddItem(true);
+    try {
+      const res = await fetch(`/api/bookings/${addItemBooking.id}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          equipmentId: selectedEquipmentId,
+          quantity: Number(addItemQty),
+        }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        alert("Extra gear added to Delivery Order!");
+        setAddItemBooking(null);
+        setSelectedEquipmentId("");
+        setAddItemQty("1");
+        fetchBookings();
+        fetchEquipment();
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      console.error("Failed to add item to booking", err);
+      alert("Error adding item to DO.");
+    } finally {
+      setSubmittingAddItem(false);
     }
   };
 
@@ -565,6 +606,15 @@ export default function AdminDashboardPage() {
                         ) : (
                           <div className="flex justify-center gap-1.5 flex-wrap">
                             <button
+                              onClick={() => {
+                                setAddItemBooking(b);
+                                if (equipment.length > 0) setSelectedEquipmentId(equipment[0].id);
+                              }}
+                              className="bg-blue-600 text-white font-extrabold px-2.5 py-1.5 rounded-lg text-[10px] uppercase hover:bg-blue-700 transition-colors cursor-pointer shadow"
+                            >
+                              Add Item ➕
+                            </button>
+                            <button
                               onClick={() => handleMarkReturned(b.id)}
                               className="bg-black text-white dark:bg-white dark:text-black font-extrabold px-2.5 py-1.5 rounded-lg text-[10px] uppercase hover:opacity-80 transition-opacity cursor-pointer shadow"
                             >
@@ -858,6 +908,73 @@ export default function AdminDashboardPage() {
                   className="flex-1 bg-black text-white dark:bg-white dark:text-black py-2.5 rounded-lg font-extrabold uppercase hover:opacity-80 transition-opacity cursor-pointer disabled:opacity-50 text-xs shadow-md"
                 >
                   {submitting ? "Saving..." : "Save Equipment"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ADD EXTRA ITEM TO DO MODAL */}
+      {addItemBooking && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-black border-4 border-black dark:border-white p-6 rounded-xl max-w-md w-full shadow-2xl">
+            <div className="flex justify-between items-center border-b-2 border-black dark:border-white pb-3 mb-4">
+              <div>
+                <h3 className="text-lg font-black uppercase">Append Gear to DO</h3>
+                <p className="text-xs opacity-70 font-mono">{addItemBooking.doNumber} • {addItemBooking.customerName}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddItemBooking(null)}
+                className="font-black text-sm px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddItemToBooking} className="space-y-4 text-xs font-bold">
+              <div>
+                <label className="block mb-1 uppercase">Select Equipment *</label>
+                <select
+                  value={selectedEquipmentId}
+                  onChange={(e) => setSelectedEquipmentId(e.target.value)}
+                  className="w-full border-2 border-black dark:border-white rounded-lg p-2.5 bg-white dark:bg-black outline-none font-semibold text-xs cursor-pointer"
+                >
+                  {equipment.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name} (RM {item.dailyRate}/day)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block mb-1 uppercase">Quantity *</label>
+                <input
+                  type="number"
+                  min="1"
+                  required
+                  value={addItemQty}
+                  onChange={(e) => setAddItemQty(e.target.value)}
+                  className="w-full border-2 border-black dark:border-white rounded-lg p-2.5 bg-white dark:bg-black outline-none font-semibold"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-3 border-t border-gray-200 dark:border-gray-800">
+                <button
+                  type="button"
+                  onClick={() => setAddItemBooking(null)}
+                  className="flex-1 border-2 border-black dark:border-white py-2.5 rounded-lg font-bold hover:bg-gray-100 dark:hover:bg-gray-900 cursor-pointer uppercase text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingAddItem}
+                  className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-extrabold uppercase hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 text-xs shadow-md"
+                >
+                  {submittingAddItem ? "Appending..." : "Add to Order"}
                 </button>
               </div>
             </form>
