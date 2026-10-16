@@ -70,6 +70,8 @@ export async function POST(
           bookingId,
           equipmentId,
           quantity: Number(quantity),
+          startDate: booking.startDate,
+          endDate: booking.endDate,
         },
       });
     }
