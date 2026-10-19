@@ -1,169 +1,653 @@
-"use client"
+"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-const imageMap: Record<string, string> = {
-  "RED Komodo 6k": "/komodo.webp",
-  "AMARAN Ray 660c": "/ray660.webp",
-  "AMARAN Ray 120c": "/ray120.webp"
-};
-
-export default function Home() {
+export default function StorefrontPage() {
   const [equipment, setEquipment] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Search & Category Filters
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [activeCategory, setActiveCategory] = useState("ALL");
+
+  // Cart & Dispatch Drawer State
+  const [cart, setCart] = useState<{ item: any; quantity: number }[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // Booking / Dates State
+  const [startDate, setStartDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split("T")[0];
+  });
+
+  // Checkout Step Modal inside Cart Drawer
+  const [checkoutStep, setCheckoutStep] = useState<"cart" | "details">("cart");
+  const [customerName, setCustomerName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [identityNo, setIdentityNo] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("BANK TRANSFER");
+  const [deliveryMethod, setDeliveryMethod] = useState("SELF-PICKUP");
+  const [submittingBooking, setSubmittingBooking] = useState(false);
+  const [bookingSuccess, setBookingSuccess] = useState<string | null>(null);
+
+  // Fetch Live Equipment Inventory
+  const fetchEquipment = async () => {
+    try {
+      const res = await fetch("/api/equipment");
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setEquipment(data);
+      }
+    } catch (err) {
+      console.error("Failed to load catalog equipment", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchEquipment() {
-      try {
-        const res = await fetch("/api/equipment");
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setEquipment(data);
-        }
-      } catch (err) {
-        console.error("Error fetching equipment:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchEquipment();
   }, []);
 
-  // Extract unique categories dynamically from the database list
-  const categories = ["ALL", ...Array.from(new Set(equipment.map((item) => item.category)))];
+  // Calculate Rental Duration (Days)
+  const calculateDays = () => {
+    if (!startDate || !endDate) return 1;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = end.getTime() - start.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 1;
+  };
 
-  // Filter equipment based on Search Bar and Selected Category
+  const rentalDays = calculateDays();
+
+  // Cart Functions
+  const addToCart = (item: any) => {
+    setCart((prev) => {
+      const existing = prev.find((c) => c.item.id === item.id);
+      if (existing) {
+        return prev.map((c) =>
+          c.item.id === item.id ? { ...c, quantity: c.quantity + 1 } : c
+        );
+      }
+      return [...prev, { item, quantity: 1 }];
+    });
+    setIsCartOpen(true);
+  };
+
+  const removeFromCart = (equipmentId: string) => {
+    setCart((prev) => prev.filter((c) => c.item.id !== equipmentId));
+  };
+
+  const updateQuantity = (equipmentId: string, qty: number) => {
+    if (qty <= 0) {
+      removeFromCart(equipmentId);
+      return;
+    }
+    setCart((prev) =>
+      prev.map((c) => (c.item.id === equipmentId ? { ...c, quantity: qty } : c))
+    );
+  };
+
+  const dailySubtotal = cart.reduce(
+    (sum, c) => sum + (c.item.dailyRate || 0) * c.quantity,
+    0
+  );
+  const grandTotal = dailySubtotal * rentalDays;
+  const totalCartCount = cart.reduce((sum, c) => sum + c.quantity, 0);
+
+  // Handle Order Dispatch Submission
+  const handlePlaceBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (cart.length === 0) return;
+
+    setSubmittingBooking(true);
+    try {
+      const payload = {
+        customerName,
+        phone,
+        identityNo,
+        paymentMethod,
+        deliveryMethod,
+        startDate,
+        endDate,
+        rentalDays,
+        items: cart.map((c) => ({
+          equipmentId: c.item.id,
+          quantity: c.quantity,
+        })),
+      };
+
+      const res = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setBookingSuccess(data.booking?.doNumber || "DO-SUCCESS");
+        setCart([]);
+        setCheckoutStep("cart");
+      } else {
+        alert(`Booking Error: ${data.error}`);
+      }
+    } catch (err) {
+      console.error("Failed to place order", err);
+      alert("An unexpected error occurred while placing your dispatch order.");
+    } finally {
+      setSubmittingBooking(false);
+    }
+  };
+
+  // Dynamic Category Filters
+  const categories = [
+    "ALL",
+    "CINEMA CAMERA",
+    "LENSES",
+    "LIGHTING",
+    "SUPPORT & GRIP",
+    "AUDIO",
+  ];
+
   const filteredEquipment = equipment.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "ALL" || item.category === selectedCategory;
+    const matchesSearch =
+      item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.category?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesCategory =
+      activeCategory === "ALL" ||
+      item.category?.toUpperCase() === activeCategory.toUpperCase();
+
     return matchesSearch && matchesCategory;
   });
 
   return (
-    <main className="p-8 font-sans max-w-6xl mx-auto min-h-screen text-black dark:text-white">
+    <div className="min-h-screen bg-white text-zinc-900 font-sans selection:bg-zinc-200">
       
-      {/* HEADER & HERO */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-extrabold tracking-tight uppercase mb-2">
-          Equipment Catalog
-        </h1>
-        <p className="text-sm opacity-75">
-          Browse live inventory, check rental availability, and book gear online.
-        </p>
-      </div>
+      {/* 1. EDITORIAL HEADER */}
+      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-zinc-100 px-6 lg:px-12 py-4 transition-all">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          
+          {/* TUAQ K4O LOGO */}
+          <Link href="/" className="group block">
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-bold tracking-tighter text-zinc-900 font-sans">
+                tuaq
+              </span>
+              <span className="text-xs font-semibold text-zinc-600 tracking-normal">
+                k4o™
+              </span>
+            </div>
+            <p className="text-[10px] font-medium tracking-widest text-zinc-500 uppercase -mt-1">
+              tech & support
+            </p>
+          </Link>
 
-      {/* SEARCH BAR */}
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search equipment by name or model..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full border-2 border-black dark:border-white rounded-lg p-3 text-sm bg-white dark:bg-black font-medium outline-none shadow-sm focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+          {/* DESKTOP NAV LINKS */}
+          <nav className="hidden md:flex items-center gap-8 text-xs font-medium uppercase tracking-wider text-zinc-600">
+            <a href="#catalogue" className="hover:text-zinc-900 transition-colors">
+              Catalogue
+            </a>
+            <a href="#about" className="hover:text-zinc-900 transition-colors">
+              About
+            </a>
+            <Link href="/admin" className="hover:text-zinc-900 transition-colors opacity-60 hover:opacity-100">
+              Staff Portal 🔒
+            </Link>
+          </nav>
 
-      {/* DYNAMIC CATEGORY FILTER BUTTONS */}
-      <div className="flex flex-wrap gap-2 mb-8">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setSelectedCategory(cat)}
-            className={`px-4 py-2 rounded-lg text-xs font-extrabold uppercase transition-all cursor-pointer border-2 ${
-              selectedCategory === cat
-                ? "bg-black text-white dark:bg-white dark:text-black border-black dark:border-white shadow"
-                : "border-black dark:border-white hover:bg-gray-100 dark:hover:bg-gray-900"
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
+          {/* SEARCH & CART TRIGGER */}
+          <div className="flex items-center gap-4">
+            <div className="relative hidden sm:block">
+              <input
+                type="text"
+                placeholder="Search gear..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-zinc-50 border border-zinc-200 rounded-full px-4 py-1.5 text-xs text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-zinc-400 w-48 lg:w-64 transition-all"
+              />
+            </div>
 
-      {/* EQUIPMENT GRID */}
-      {loading ? (
-        <p className="text-center font-bold text-lg py-12">Loading store catalog...</p>
-      ) : filteredEquipment.length === 0 ? (
-        <div className="p-12 border-2 border-black dark:border-white rounded-lg text-center opacity-60">
-          <p className="text-lg font-bold">No gear found matching your search.</p>
-          <p className="text-xs mt-1">Try clearing your category filter or search query.</p>
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 py-2 rounded-full text-xs font-medium transition-all cursor-pointer shadow-sm"
+            >
+              <span>Dispatch</span>
+              <span className="bg-zinc-700 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                {totalCartCount}
+              </span>
+            </button>
+          </div>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEquipment.map((item) => {
-            const totalStock = item.stock ?? 1;
-            const rentedOut = item.rentedOut ?? 0;
-            const availableLeft = Math.max(0, totalStock - rentedOut);
-            const displayImage = imageMap[item.name] || item.imageUrl;
+      </header>
 
-            return (
-              <div
-                key={item.id}
-                className="border-2 border-black dark:border-white rounded-lg p-5 bg-white dark:bg-black shadow-md flex flex-col justify-between hover:shadow-xl transition-shadow"
+      {/* 2. CATALOGUE HERO SECTION */}
+      <section id="catalogue" className="max-w-7xl mx-auto px-6 lg:px-12 pt-12 pb-6">
+        <div className="border-b border-zinc-100 pb-8">
+          <h1 className="text-4xl sm:text-6xl font-black tracking-tight uppercase text-zinc-900">
+            Catalogue
+          </h1>
+          <p className="text-xs sm:text-sm font-medium tracking-wide text-zinc-500 uppercase mt-2">
+            Selected Cinema & Production Equipment
+          </p>
+        </div>
+
+        {/* CATEGORY NAV TABS */}
+        <div className="flex items-center justify-between gap-4 mt-8 overflow-x-auto pb-2 scrollbar-none">
+          <div className="flex items-center gap-2 sm:gap-4">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
+                  activeCategory === cat
+                    ? "bg-zinc-900 text-white shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
+                }`}
               >
-                <div>
-                  {/* IMAGE */}
-                  {displayImage ? (
-                    <img
-                      src={displayImage}
-                      alt={item.name}
-                      className="w-full h-48 object-cover rounded border-2 border-black dark:border-white bg-white mb-4"
-                    />
-                  ) : (
-                    <div className="w-full h-48 border-2 border-black dark:border-white border-dashed rounded mb-4 flex items-center justify-center bg-gray-50 dark:bg-gray-900 opacity-60 font-bold text-xs">
-                      📷 {item.name}
-                    </div>
-                  )}
+                {cat}
+              </button>
+            ))}
+          </div>
 
-                  {/* CATEGORY & TITLE */}
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider bg-gray-200 dark:bg-gray-800 px-2 py-0.5 rounded">
-                    {item.category}
-                  </span>
-                  <h2 className="text-xl font-bold mt-2 mb-1">{item.name}</h2>
-                  <p className="text-xs opacity-60 font-mono mb-3">S/N: {item.serialNumber}</p>
+          {/* MOBILE SEARCH INPUT */}
+          <div className="block sm:hidden min-w-[140px]">
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-zinc-50 border border-zinc-200 rounded-full px-3 py-1.5 text-xs outline-none"
+            />
+          </div>
+        </div>
+      </section>
 
-                  {/* STOCK BADGES */}
-                  <div className="p-3 rounded border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 flex justify-between text-[11px] mb-4">
-                    <div>
-                      <span className="block opacity-60">Owned</span>
-                      <strong className="text-sm">{totalStock}</strong>
-                    </div>
-                    <div>
-                      <span className="block opacity-60">Rented</span>
-                      <strong className="text-sm text-orange-500">{rentedOut}</strong>
-                    </div>
-                    <div>
-                      <span className="block opacity-60">Available</span>
-                      <strong className={`text-sm ${availableLeft > 0 ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
-                        {availableLeft}
-                      </strong>
+      {/* 3. EQUIPMENT GRID */}
+      <main className="max-w-7xl mx-auto px-6 lg:px-12 py-8 min-h-[50vh]">
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <div key={n} className="animate-pulse space-y-3">
+                <div className="bg-stone-100 aspect-square rounded-2xl"></div>
+                <div className="h-4 bg-stone-100 rounded w-3/4"></div>
+                <div className="h-3 bg-stone-100 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        ) : filteredEquipment.length === 0 ? (
+          <div className="text-center py-24 border border-dashed border-zinc-200 rounded-2xl">
+            <p className="text-sm font-semibold text-zinc-600">No equipment found matching your search.</p>
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setActiveCategory("ALL");
+              }}
+              className="mt-3 text-xs font-bold uppercase tracking-wider underline text-zinc-900 hover:opacity-75"
+            >
+              Reset Filters
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-12">
+            {filteredEquipment.map((item) => {
+              const isOut = item.stock <= (item.rentedOut || 0);
+
+              return (
+                <div
+                  key={item.id}
+                  className="group flex flex-col justify-between cursor-pointer"
+                  onClick={() => !isOut && addToCart(item)}
+                >
+                  {/* STUDIO IMAGE CONTAINER */}
+                  <div className="relative aspect-square w-full bg-[#F5F4F0] rounded-2xl overflow-hidden flex items-center justify-center p-6 transition-transform duration-300 group-hover:-translate-y-1">
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-full h-full object-contain mix-blend-multiply transition-scale duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="text-4xl opacity-30">📷</div>
+                    )}
+
+                    {/* DISCRETE AVAILABILITY TAG */}
+                    <div className="absolute top-3 left-3">
+                      <span
+                        className={`text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full ${
+                          isOut
+                            ? "bg-zinc-200 text-zinc-600"
+                            : "bg-white/80 backdrop-blur-md text-zinc-900 shadow-sm"
+                        }`}
+                      >
+                        {isOut ? "Out on Hire" : "In Stock"}
+                      </span>
                     </div>
                   </div>
 
-                  <p className="text-lg font-extrabold text-blue-600 dark:text-blue-400 mb-4">
-                    RM {item.dailyRate?.toFixed(2)} <span className="text-xs font-normal text-black dark:text-white opacity-60">/ day</span>
+                  {/* EQUIPMENT METADATA */}
+                  <div className="mt-3 flex items-start justify-between gap-2">
+                    <div>
+                      <h3 className="text-sm font-bold text-zinc-900 group-hover:text-zinc-600 transition-colors line-clamp-1">
+                        {item.name}
+                      </h3>
+                      <p className="text-xs font-mono text-zinc-500 mt-0.5">
+                        RM {item.dailyRate?.toFixed(2)} / day
+                      </p>
+                    </div>
+
+                    <button
+                      disabled={isOut}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(item);
+                      }}
+                      className="w-7 h-7 rounded-full bg-zinc-100 group-hover:bg-zinc-900 group-hover:text-white flex items-center justify-center text-xs font-bold transition-all cursor-pointer disabled:opacity-30 shrink-0"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </main>
+
+      {/* 4. FOOTER */}
+      <footer id="about" className="border-t border-zinc-100 bg-zinc-50 mt-20 py-16 px-6 lg:px-12">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-zinc-900">
+              DON'T BE SHY, JUST SAY HI!
+            </h2>
+            <p className="text-xs text-zinc-500 mt-2 font-mono">
+              info@tuaqk4o.com • Kuala Lumpur, Malaysia
+            </p>
+          </div>
+
+          <div className="text-xs font-mono text-zinc-400">
+            © {new Date().getFullYear()} tuaq k4o™ tech & support. All rights reserved.
+          </div>
+        </div>
+      </footer>
+
+      {/* 5. SLIDE-OVER DISPATCH CART DRAWER */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm transition-opacity">
+          <div className="w-full max-w-md bg-white h-full p-6 sm:p-8 flex flex-col justify-between overflow-y-auto shadow-2xl animate-in slide-in-from-right duration-300">
+            
+            <div>
+              {/* DRAWER HEADER */}
+              <div className="flex justify-between items-center border-b border-zinc-100 pb-4 mb-6">
+                <div>
+                  <h2 className="text-lg font-black uppercase tracking-tight text-zinc-900">
+                    YOUR DISPATCH
+                  </h2>
+                  <p className="text-[11px] font-mono text-zinc-500">
+                    {totalCartCount} item(s) selected
                   </p>
                 </div>
-
-                {/* VIEW DETAILS BUTTON */}
-                <Link
-                  href={`/equipment/${encodeURIComponent(item.id)}`}
-                  className={`w-full text-center py-2.5 rounded-lg font-extrabold text-xs uppercase tracking-wider transition-opacity ${
-                    availableLeft > 0
-                      ? "bg-black text-white dark:bg-white dark:text-black hover:opacity-80"
-                      : "bg-gray-300 text-gray-500 dark:bg-gray-800 dark:text-gray-400 cursor-not-allowed"
-                  }`}
+                <button
+                  onClick={() => setIsCartOpen(false)}
+                  className="w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center font-bold text-xs cursor-pointer"
                 >
-                  {availableLeft > 0 ? "View & Book Gear →" : "Out of Stock"}
-                </Link>
+                  ✕
+                </button>
               </div>
-            );
-          })}
+
+              {/* SUCCESS MESSAGE */}
+              {bookingSuccess ? (
+                <div className="py-12 text-center space-y-4">
+                  <div className="w-16 h-16 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-2xl mx-auto font-black">
+                    ✓
+                  </div>
+                  <h3 className="text-xl font-bold uppercase tracking-tight">Order Dispatched!</h3>
+                  <p className="text-xs text-zinc-600 font-mono">
+                    DO Ref Number: <span className="font-bold text-zinc-900">{bookingSuccess}</span>
+                  </p>
+                  <p className="text-xs text-zinc-500 leading-relaxed max-w-xs mx-auto">
+                    Our rental desk will contact your registered phone number shortly to finalize dispatch and collection details.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setBookingSuccess(null);
+                      setIsCartOpen(false);
+                    }}
+                    className="w-full bg-zinc-900 text-white font-bold py-3 rounded-full text-xs uppercase tracking-wider hover:opacity-90 transition-opacity cursor-pointer mt-4"
+                  >
+                    Back to Catalogue
+                  </button>
+                </div>
+              ) : checkoutStep === "cart" ? (
+                /* CART ITEMS & DATES */
+                <div className="space-y-6">
+                  
+                  {/* RENTAL DATES SELECTOR */}
+                  <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100 space-y-3">
+                    <p className="text-xs font-bold uppercase tracking-wider text-zinc-700">
+                      Rental Duration ({rentalDays} Day{rentalDays > 1 ? "s" : ""})
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <label className="block text-[10px] uppercase font-bold text-zinc-500 mb-1">
+                          Start Date
+                        </label>
+                        <input
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          className="w-full bg-white border border-zinc-200 rounded-lg p-2 font-mono text-xs outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase font-bold text-zinc-500 mb-1">
+                          End Date
+                        </label>
+                        <input
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          className="w-full bg-white border border-zinc-200 rounded-lg p-2 font-mono text-xs outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CART LIST */}
+                  {cart.length === 0 ? (
+                    <div className="py-12 text-center text-zinc-400 text-xs">
+                      Your dispatch cart is empty. Click gear items to add them.
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-1">
+                      {cart.map(({ item, quantity }) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between border-b border-zinc-100 pb-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-zinc-50 rounded-lg p-1 flex items-center justify-center border border-zinc-100">
+                              {item.imageUrl ? (
+                                <img
+                                  src={item.imageUrl}
+                                  alt={item.name}
+                                  className="w-full h-full object-contain mix-blend-multiply"
+                                />
+                              ) : (
+                                "📷"
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-zinc-900">{item.name}</p>
+                              <p className="text-[10px] font-mono text-zinc-500">
+                                RM {item.dailyRate?.toFixed(2)} / day
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => updateQuantity(item.id, quantity - 1)}
+                              className="w-6 h-6 rounded bg-zinc-100 hover:bg-zinc-200 font-bold text-xs flex items-center justify-center"
+                            >
+                              -
+                            </button>
+                            <span className="text-xs font-bold font-mono w-4 text-center">
+                              {quantity}
+                            </span>
+                            <button
+                              onClick={() => updateQuantity(item.id, quantity + 1)}
+                              className="w-6 h-6 rounded bg-zinc-100 hover:bg-zinc-200 font-bold text-xs flex items-center justify-center"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* CHECKOUT DETAILS FORM */
+                <form id="checkout-form" onSubmit={handlePlaceBooking} className="space-y-4 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setCheckoutStep("cart")}
+                    className="text-xs font-bold text-zinc-500 hover:text-zinc-900 mb-2 block"
+                  >
+                    ← Back to Selected Items
+                  </button>
+
+                  <h3 className="text-xs font-black uppercase tracking-wider text-zinc-900 border-b border-zinc-100 pb-2">
+                    Client Details
+                  </h3>
+
+                  <div>
+                    <label className="block font-bold uppercase text-[10px] text-zinc-500 mb-1">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Alex Tan"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2.5 font-semibold outline-none focus:border-zinc-900"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-bold uppercase text-[10px] text-zinc-500 mb-1">
+                        Phone Number *
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="e.g. +60123456789"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2.5 font-semibold outline-none focus:border-zinc-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold uppercase text-[10px] text-zinc-500 mb-1">
+                        IC / Passport No *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. 950101-14-5566"
+                        value={identityNo}
+                        onChange={(e) => setIdentityNo(e.target.value)}
+                        className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2.5 font-mono outline-none focus:border-zinc-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-bold uppercase text-[10px] text-zinc-500 mb-1">
+                        Payment Method
+                      </label>
+                      <select
+                        value={paymentMethod}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2.5 font-bold outline-none cursor-pointer"
+                      >
+                        <option value="BANK TRANSFER">Bank Transfer</option>
+                        <option value="TOUCH N GO">Touch 'n Go E-Wallet</option>
+                        <option value="CASH">Cash on Pickup</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-bold uppercase text-[10px] text-zinc-500 mb-1">
+                        Fulfillment
+                      </label>
+                      <select
+                        value={deliveryMethod}
+                        onChange={(e) => setDeliveryMethod(e.target.value)}
+                        className="w-full bg-zinc-50 border border-zinc-200 rounded-lg p-2.5 font-bold outline-none cursor-pointer"
+                      >
+                        <option value="SELF-PICKUP">Self-Pickup (Studio)</option>
+                        <option value="DELIVERY">Courier / Dispatch</option>
+                      </select>
+                    </div>
+                  </div>
+                </form>
+              )}
+            </div>
+
+            {/* DRAWER FOOTER / TOTAL SUMMARY */}
+            {!bookingSuccess && (
+              <div className="border-t border-zinc-100 pt-4 mt-6 space-y-3">
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between text-zinc-500">
+                    <span>Daily Subtotal</span>
+                    <span className="font-mono">RM {dailySubtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-zinc-500">
+                    <span>Duration</span>
+                    <span className="font-mono">{rentalDays} Day(s)</span>
+                  </div>
+                  <div className="flex justify-between text-zinc-900 font-extrabold text-sm pt-2 border-t border-zinc-100">
+                    <span>Estimated Total</span>
+                    <span className="font-mono text-base">RM {grandTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {checkoutStep === "cart" ? (
+                  <button
+                    disabled={cart.length === 0}
+                    onClick={() => setCheckoutStep("details")}
+                    className="w-full bg-zinc-900 text-white font-bold py-3.5 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-800 transition-all cursor-pointer disabled:opacity-30 shadow-md"
+                  >
+                    Proceed to Details →
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    form="checkout-form"
+                    disabled={submittingBooking}
+                    className="w-full bg-zinc-900 text-white font-bold py-3.5 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-800 transition-all cursor-pointer disabled:opacity-50 shadow-md"
+                  >
+                    {submittingBooking ? "Processing..." : "Confirm Dispatch Booking 🛒"}
+                  </button>
+                )}
+              </div>
+            )}
+
+          </div>
         </div>
       )}
 
-    </main>
+    </div>
   );
 }
