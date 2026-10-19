@@ -1,6 +1,5 @@
 "use client"
 import Link from "next/link";
-
 export default function Footer() {
   return (
     <footer className="border-t-2 border-black dark:border-white bg-white dark:bg-black text-black dark:text-white mt-16 text-xs font-sans print:hidden">

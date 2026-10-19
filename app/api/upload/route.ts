@@ -1,41 +1,39 @@
-import { NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
     if (!file) {
       return NextResponse.json(
-        { success: false, error: "No file provided" },
+        { success: false, error: "No file selected for upload." },
         { status: 400 }
       );
     }
 
+    // Limit file size to 4MB to prevent excessive DB storage payload
+    if (file.size > 4 * 1024 * 1024) {
+      return NextResponse.json(
+        { success: false, error: "File size exceeds 4MB limit. Please choose a smaller image." },
+        { status: 400 }
+      );
+    }
+
+    // Convert file buffer to Base64 Data URL
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const mimeType = file.type || "image/jpeg";
+    const base64ImageUrl = `data:${mimeType};base64,${buffer.toString("base64")}`;
 
-    // Create a unique filename to prevent overwriting existing files
-    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const filename = `${Date.now()}_${sanitizedName}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-
-    // Ensure public/uploads folder exists
-    await mkdir(uploadDir, { recursive: true });
-
-    // Save file to disk
-    const filePath = path.join(uploadDir, filename);
-    await writeFile(filePath, buffer);
-
-    const imageUrl = `/uploads/${filename}`;
-
-    return NextResponse.json({ success: true, imageUrl });
+    return NextResponse.json({
+      success: true,
+      imageUrl: base64ImageUrl,
+    });
   } catch (error: any) {
-    console.error("Image upload error:", error);
+    console.error("Image upload processing error:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to upload image" },
+      { success: false, error: error.message || "Failed to process uploaded image." },
       { status: 500 }
     );
   }
