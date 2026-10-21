@@ -173,17 +173,17 @@ export default function StorefrontPage() {
   return (
     <div className="min-h-screen bg-white text-zinc-900 font-sans selection:bg-zinc-200">
       
-      {/* 1. EDITORIAL HEADER */}
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-zinc-100 px-6 lg:px-12 py-4 transition-all">
+      {/* 1. SINGLE CLEAN EDITORIAL HEADER */}
+      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-zinc-100 px-6 lg:px-12 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           
           {/* TUAQ K4O LOGO */}
           <Link href="/" className="group block">
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold tracking-tighter text-zinc-900 font-sans">
+              <span className="text-2xl font-bold tracking-tighter text-zinc-900">
                 tuaq
               </span>
-              <span className="text-xs font-semibold text-zinc-600 tracking-normal">
+              <span className="text-xs font-semibold text-zinc-600">
                 k4o™
               </span>
             </div>
@@ -192,7 +192,7 @@ export default function StorefrontPage() {
             </p>
           </Link>
 
-          {/* DESKTOP NAV LINKS */}
+          {/* DESKTOP NAV */}
           <nav className="hidden md:flex items-center gap-8 text-xs font-medium uppercase tracking-wider text-zinc-600">
             <a href="#catalogue" className="hover:text-zinc-900 transition-colors">
               Catalogue
@@ -205,7 +205,7 @@ export default function StorefrontPage() {
             </Link>
           </nav>
 
-          {/* SEARCH & CART TRIGGER */}
+          {/* SEARCH & CART BUTTON */}
           <div className="flex items-center gap-4">
             <div className="relative hidden sm:block">
               <input
@@ -230,7 +230,7 @@ export default function StorefrontPage() {
         </div>
       </header>
 
-      {/* 2. CATALOGUE HERO SECTION */}
+      {/* 2. CATALOGUE HERO */}
       <section id="catalogue" className="max-w-7xl mx-auto px-6 lg:px-12 pt-12 pb-6">
         <div className="border-b border-zinc-100 pb-8">
           <h1 className="text-4xl sm:text-6xl font-black tracking-tight uppercase text-zinc-900">
@@ -241,7 +241,7 @@ export default function StorefrontPage() {
           </p>
         </div>
 
-        {/* CATEGORY NAV TABS */}
+        {/* CATEGORIES */}
         <div className="flex items-center justify-between gap-4 mt-8 overflow-x-auto pb-2 scrollbar-none">
           <div className="flex items-center gap-2 sm:gap-4">
             {categories.map((cat) => (
@@ -259,7 +259,6 @@ export default function StorefrontPage() {
             ))}
           </div>
 
-          {/* MOBILE SEARCH INPUT */}
           <div className="block sm:hidden min-w-[140px]">
             <input
               type="text"
@@ -272,47 +271,34 @@ export default function StorefrontPage() {
         </div>
       </section>
 
-      {/* 3. POLISHED EQUIPMENT GRID */}
+      {/* 3. EQUIPMENT GRID */}
       <main className="max-w-7xl mx-auto px-6 lg:px-12 py-8 min-h-[50vh]">
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+            {[1, 2, 3, 4].map((n) => (
               <div key={n} className="animate-pulse space-y-3">
                 <div className="bg-zinc-100 aspect-square rounded-2xl"></div>
                 <div className="h-4 bg-zinc-100 rounded w-3/4"></div>
-                <div className="h-3 bg-zinc-100 rounded w-1/2"></div>
               </div>
             ))}
           </div>
         ) : filteredEquipment.length === 0 ? (
           <div className="text-center py-24 border border-dashed border-zinc-200 rounded-2xl">
             <p className="text-sm font-semibold text-zinc-600">No equipment found matching your search.</p>
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setActiveCategory("ALL");
-              }}
-              className="mt-3 text-xs font-bold uppercase tracking-wider underline text-zinc-900 hover:opacity-75 cursor-pointer"
-            >
-              Reset Filters
-            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-12">
             {filteredEquipment.map((item) => {
               const isOut = item.stock <= (item.rentedOut || 0);
-
               const mount = item.lensMount || item.lens_mount;
               const resOut = item.resolutionOutput || item.resolution || item.resolution_output;
-              const desc = item.description;
 
               return (
                 <div
                   key={item.id}
-                  className="group flex flex-col justify-between cursor-pointer"
+                  className="group flex flex-col justify-between cursor-pointer transition-all duration-300"
                   onClick={() => setSelectedItem(item)}
                 >
-                  {/* STUDIO IMAGE CONTAINER WITH HOVER ANIMATIONS */}
                   <div className="relative aspect-square w-full bg-[#F6F5F2] rounded-2xl overflow-hidden flex items-center justify-center p-6 transition-all duration-500 ease-out group-hover:-translate-y-1.5 group-hover:shadow-xl group-hover:shadow-zinc-900/5">
                     {item.imageUrl ? (
                       <img
@@ -324,13 +310,12 @@ export default function StorefrontPage() {
                       <div className="text-4xl opacity-20">📷</div>
                     )}
 
-                    {/* ELEGANT GLASSMORPHISM BADGE */}
                     <div className="absolute top-3 left-3">
                       <span
-                        className={`inline-flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full backdrop-blur-md transition-all ${
+                        className={`inline-flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full backdrop-blur-md ${
                           isOut
-                            ? "bg-zinc-200/80 text-zinc-500 border border-zinc-300/50"
-                            : "bg-white/85 text-zinc-900 border border-white/60 shadow-xs"
+                            ? "bg-zinc-200/80 text-zinc-500"
+                            : "bg-white/85 text-zinc-900 shadow-xs"
                         }`}
                       >
                         <span
@@ -343,35 +328,29 @@ export default function StorefrontPage() {
                     </div>
                   </div>
 
-                  {/* METADATA BLOCK */}
                   <div className="mt-3.5 flex items-start justify-between gap-3 px-0.5">
                     <div className="space-y-1 min-w-0">
-                      <h3 className="text-sm font-bold text-zinc-900 group-hover:text-zinc-600 transition-colors line-clamp-1 tracking-tight">
+                      <h3 className="text-sm font-bold text-zinc-900 group-hover:text-zinc-600 transition-colors line-clamp-1">
                         {item.name}
                       </h3>
-
-                      {/* SPEC SUBTITLE */}
-                      {(mount || resOut || desc) && (
+                      {(mount || resOut) && (
                         <p className="text-[10px] text-zinc-400 font-mono tracking-tight line-clamp-1">
-                          {[mount, resOut].filter(Boolean).join(" • ") || desc}
+                          {[mount, resOut].filter(Boolean).join(" • ")}
                         </p>
                       )}
-
                       <p className="text-xs font-mono font-bold text-zinc-900 pt-0.5">
                         RM {item.dailyRate?.toFixed(2)}{" "}
                         <span className="text-[10px] font-normal text-zinc-400">/ day</span>
                       </p>
                     </div>
 
-                    {/* QUICK ADD BUTTON */}
                     <button
                       disabled={isOut}
                       onClick={(e) => {
                         e.stopPropagation();
                         addToCart(item);
                       }}
-                      title="Add directly to cart"
-                      className="w-8 h-8 rounded-full bg-zinc-100 group-hover:bg-zinc-900 group-hover:text-white flex items-center justify-center text-sm font-bold transition-all duration-300 cursor-pointer disabled:opacity-20 shrink-0 shadow-xs hover:scale-105 active:scale-95"
+                      className="w-8 h-8 rounded-full bg-zinc-100 group-hover:bg-zinc-900 group-hover:text-white flex items-center justify-center text-sm font-bold transition-all duration-300 cursor-pointer disabled:opacity-20 shrink-0 hover:scale-105 active:scale-95"
                     >
                       +
                     </button>
@@ -383,7 +362,7 @@ export default function StorefrontPage() {
         )}
       </main>
 
-      {/* 4. FOOTER */}
+      {/* 4. SINGLE EDITORIAL FOOTER */}
       <footer id="about" className="border-t border-zinc-100 bg-zinc-50 mt-20 py-16 px-6 lg:px-12">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
           <div>
@@ -401,7 +380,7 @@ export default function StorefrontPage() {
         </div>
       </footer>
 
-      {/* 5. ITEM DETAIL MODAL */}
+      {/* 5. ITEM DETAIL MODAL WITH SMOOTH ZOOM & SLIDE ANIMATION */}
       {selectedItem && (() => {
         const desc = selectedItem.description;
         const mount = selectedItem.lensMount || selectedItem.lens_mount;
@@ -410,8 +389,14 @@ export default function StorefrontPage() {
         const kit = selectedItem.includedKit || selectedItem.included_kit;
 
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white max-w-2xl w-full rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col justify-between border border-zinc-100 relative">
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md transition-all duration-300 animate-in fade-in"
+            onClick={() => setSelectedItem(null)}
+          >
+            <div 
+              className="bg-white max-w-2xl w-full rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col justify-between border border-zinc-100 relative transition-all duration-300 animate-in zoom-in-95 fade-in slide-in-from-bottom-4"
+              onClick={(e) => e.stopPropagation()}
+            >
               
               {/* CLOSE BUTTON */}
               <button
@@ -421,13 +406,11 @@ export default function StorefrontPage() {
                 ✕
               </button>
 
-              {/* MODAL MAIN CONTENT */}
+              {/* CONTENT */}
               <div className="overflow-y-auto pr-1 space-y-6">
                 
-                {/* HERO GRID */}
+                {/* HERO */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start border-b border-zinc-100 pb-6">
-                  
-                  {/* STUDIO IMAGE CONTAINER */}
                   <div className="bg-[#F6F5F2] rounded-2xl aspect-square flex items-center justify-center p-6 relative">
                     {selectedItem.imageUrl ? (
                       <img
@@ -440,7 +423,6 @@ export default function StorefrontPage() {
                     )}
                   </div>
 
-                  {/* METADATA & STAFF FIELDS */}
                   <div className="space-y-4">
                     <div>
                       <span className="text-[10px] font-bold uppercase tracking-widest bg-zinc-100 text-zinc-600 px-2.5 py-1 rounded-full">
@@ -478,7 +460,6 @@ export default function StorefrontPage() {
                       </div>
                     </div>
 
-                    {/* STAFF ITEM DESCRIPTION */}
                     {desc && (
                       <div className="pt-2">
                         <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-1">
@@ -493,11 +474,9 @@ export default function StorefrontPage() {
                   </div>
                 </div>
 
-                {/* TECHNICAL HIGHLIGHTS & INCLUDED KIT */}
+                {/* TECH & KIT */}
                 {(tech || kit) && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    
-                    {/* TECHNICAL HIGHLIGHTS */}
                     {tech && (
                       <div>
                         <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-2">
@@ -517,7 +496,6 @@ export default function StorefrontPage() {
                       </div>
                     )}
 
-                    {/* INCLUDED KIT & ACCESSORIES */}
                     {kit && (
                       <div>
                         <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-2">
@@ -536,7 +514,6 @@ export default function StorefrontPage() {
                         </ul>
                       </div>
                     )}
-
                   </div>
                 )}
 
@@ -571,9 +548,7 @@ export default function StorefrontPage() {
       {isCartOpen && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm transition-opacity">
           <div className="w-full max-w-md bg-white h-full p-6 sm:p-8 flex flex-col justify-between overflow-y-auto shadow-2xl animate-in slide-in-from-right duration-300">
-            
             <div>
-              {/* DRAWER HEADER */}
               <div className="flex justify-between items-center border-b border-zinc-100 pb-4 mb-6">
                 <div>
                   <h2 className="text-lg font-black uppercase tracking-tight text-zinc-900">
@@ -591,7 +566,6 @@ export default function StorefrontPage() {
                 </button>
               </div>
 
-              {/* SUCCESS MESSAGE */}
               {bookingSuccess ? (
                 <div className="py-12 text-center space-y-4">
                   <div className="w-16 h-16 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-2xl mx-auto font-black">
@@ -601,24 +575,18 @@ export default function StorefrontPage() {
                   <p className="text-xs text-zinc-600 font-mono">
                     DO Ref Number: <span className="font-bold text-zinc-900">{bookingSuccess}</span>
                   </p>
-                  <p className="text-xs text-zinc-500 leading-relaxed max-w-xs mx-auto">
-                    Our rental desk will contact your registered phone number shortly to finalize dispatch and collection details.
-                  </p>
                   <button
                     onClick={() => {
                       setBookingSuccess(null);
                       setIsCartOpen(false);
                     }}
-                    className="w-full bg-zinc-900 text-white font-bold py-3 rounded-full text-xs uppercase tracking-wider hover:opacity-90 transition-opacity cursor-pointer mt-4"
+                    className="w-full bg-zinc-900 text-white font-bold py-3 rounded-full text-xs uppercase tracking-wider cursor-pointer mt-4"
                   >
                     Back to Catalogue
                   </button>
                 </div>
               ) : checkoutStep === "cart" ? (
-                /* CART ITEMS & DATES */
                 <div className="space-y-6">
-                  
-                  {/* RENTAL DATES SELECTOR */}
                   <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100 space-y-3">
                     <p className="text-xs font-bold uppercase tracking-wider text-zinc-700">
                       Rental Duration ({rentalDays} Day{rentalDays > 1 ? "s" : ""})
@@ -649,72 +617,60 @@ export default function StorefrontPage() {
                     </div>
                   </div>
 
-                  {/* CART LIST */}
                   {cart.length === 0 ? (
                     <div className="py-12 text-center text-zinc-400 text-xs">
                       Your dispatch cart is empty. Click gear items to add them.
                     </div>
                   ) : (
                     <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-1">
-                      {cart.map(({ item, quantity }) => {
-                        const mount = item.lensMount || item.lens_mount;
-                        const resOut = item.resolutionOutput || item.resolution || item.resolution_output;
-
-                        return (
-                          <div
-                            key={item.id}
-                            className="flex items-center justify-between border-b border-zinc-100 pb-3"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 bg-zinc-50 rounded-lg p-1 flex items-center justify-center border border-zinc-100 shrink-0">
-                                {item.imageUrl ? (
-                                  <img
-                                    src={item.imageUrl}
-                                    alt={item.name}
-                                    className="w-full h-full object-contain mix-blend-multiply"
-                                  />
-                                ) : (
-                                  "📷"
-                                )}
-                              </div>
-                              <div>
-                                <p className="text-xs font-bold text-zinc-900">{item.name}</p>
-                                {(mount || resOut) && (
-                                  <p className="text-[9px] font-mono text-zinc-400">
-                                    {[mount, resOut].filter(Boolean).join(" • ")}
-                                  </p>
-                                )}
-                                <p className="text-[10px] font-mono text-zinc-500">
-                                  RM {item.dailyRate?.toFixed(2)} / day
-                                </p>
-                              </div>
+                      {cart.map(({ item, quantity }) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between border-b border-zinc-100 pb-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-zinc-50 rounded-lg p-1 flex items-center justify-center border border-zinc-100 shrink-0">
+                              {item.imageUrl ? (
+                                <img
+                                  src={item.imageUrl}
+                                  alt={item.name}
+                                  className="w-full h-full object-contain mix-blend-multiply"
+                                />
+                              ) : (
+                                "📷"
+                              )}
                             </div>
-
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => updateQuantity(item.id, quantity - 1)}
-                                className="w-6 h-6 rounded bg-zinc-100 hover:bg-zinc-200 font-bold text-xs flex items-center justify-center cursor-pointer"
-                              >
-                                -
-                              </button>
-                              <span className="text-xs font-bold font-mono w-4 text-center">
-                                {quantity}
-                              </span>
-                              <button
-                                onClick={() => updateQuantity(item.id, quantity + 1)}
-                                className="w-6 h-6 rounded bg-zinc-100 hover:bg-zinc-200 font-bold text-xs flex items-center justify-center cursor-pointer"
-                              >
-                                +
-                              </button>
+                            <div>
+                              <p className="text-xs font-bold text-zinc-900">{item.name}</p>
+                              <p className="text-[10px] font-mono text-zinc-500">
+                                RM {item.dailyRate?.toFixed(2)} / day
+                              </p>
                             </div>
                           </div>
-                        );
-                      })}
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => updateQuantity(item.id, quantity - 1)}
+                              className="w-6 h-6 rounded bg-zinc-100 font-bold text-xs flex items-center justify-center cursor-pointer"
+                            >
+                              -
+                            </button>
+                            <span className="text-xs font-bold font-mono w-4 text-center">
+                              {quantity}
+                            </span>
+                            <button
+                              onClick={() => updateQuantity(item.id, quantity + 1)}
+                              className="w-6 h-6 rounded bg-zinc-100 font-bold text-xs flex items-center justify-center cursor-pointer"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
               ) : (
-                /* CHECKOUT DETAILS FORM */
                 <form id="checkout-form" onSubmit={handlePlaceBooking} className="space-y-4 text-xs">
                   <button
                     type="button"
@@ -804,7 +760,6 @@ export default function StorefrontPage() {
               )}
             </div>
 
-            {/* DRAWER FOOTER / TOTAL SUMMARY */}
             {!bookingSuccess && (
               <div className="border-t border-zinc-100 pt-4 mt-6 space-y-3">
                 <div className="space-y-1 text-xs">
@@ -842,7 +797,6 @@ export default function StorefrontPage() {
                 )}
               </div>
             )}
-
           </div>
         </div>
       )}
