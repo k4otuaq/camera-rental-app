@@ -10,6 +10,9 @@ export default function StorefrontPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("ALL");
 
+  // Item Detail Modal State
+  const [selectedItem, setSelectedItem] = useState<any | null>(null);
+
   // Cart & Dispatch Drawer State
   const [cart, setCart] = useState<{ item: any; quantity: number }[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -25,7 +28,7 @@ export default function StorefrontPage() {
     return tomorrow.toISOString().split("T")[0];
   });
 
-  // Checkout Step Modal inside Cart Drawer
+  // Checkout Step State
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "details">("cart");
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
@@ -303,7 +306,7 @@ export default function StorefrontPage() {
                 <div
                   key={item.id}
                   className="group flex flex-col justify-between cursor-pointer"
-                  onClick={() => !isOut && addToCart(item)}
+                  onClick={() => setSelectedItem(item)}
                 >
                   {/* STUDIO IMAGE CONTAINER */}
                   <div className="relative aspect-square w-full bg-[#F5F4F0] rounded-2xl overflow-hidden flex items-center justify-center p-6 transition-transform duration-300 group-hover:-translate-y-1">
@@ -342,13 +345,15 @@ export default function StorefrontPage() {
                       </p>
                     </div>
 
+                    {/* DIRECT ADD TO CART "+" BUTTON */}
                     <button
                       disabled={isOut}
                       onClick={(e) => {
                         e.stopPropagation();
                         addToCart(item);
                       }}
-                      className="w-7 h-7 rounded-full bg-zinc-100 group-hover:bg-zinc-900 group-hover:text-white flex items-center justify-center text-xs font-bold transition-all cursor-pointer disabled:opacity-30 shrink-0"
+                      title="Add directly to cart"
+                      className="w-8 h-8 rounded-full bg-zinc-100 group-hover:bg-zinc-900 group-hover:text-white flex items-center justify-center text-sm font-bold transition-all cursor-pointer disabled:opacity-30 shrink-0"
                     >
                       +
                     </button>
@@ -378,7 +383,120 @@ export default function StorefrontPage() {
         </div>
       </footer>
 
-      {/* 5. SLIDE-OVER DISPATCH CART DRAWER */}
+      {/* 5. ITEM DESCRIPTION MODAL */}
+      {selectedItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white max-w-2xl w-full rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col justify-between border border-zinc-100 relative">
+            
+            {/* CLOSE BUTTON */}
+            <button
+              onClick={() => setSelectedItem(null)}
+              className="absolute top-6 right-6 w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 font-bold text-xs flex items-center justify-center cursor-pointer transition-colors z-10"
+            >
+              ✕
+            </button>
+
+            <div className="overflow-y-auto pr-1 space-y-6">
+              
+              {/* MODAL HEADER & IMAGE */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center border-b border-zinc-100 pb-6">
+                <div className="bg-[#F5F4F0] rounded-2xl aspect-square flex items-center justify-center p-6">
+                  {selectedItem.imageUrl ? (
+                    <img
+                      src={selectedItem.imageUrl}
+                      alt={selectedItem.name}
+                      className="w-full h-full object-contain mix-blend-multiply"
+                    />
+                  ) : (
+                    <div className="text-5xl opacity-30">📷</div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-widest bg-zinc-100 text-zinc-600 px-2.5 py-1 rounded-full">
+                      {selectedItem.category || "CINEMA GEAR"}
+                    </span>
+                    <h2 className="text-2xl font-black text-zinc-900 mt-2 uppercase tracking-tight">
+                      {selectedItem.name}
+                    </h2>
+                  </div>
+
+                  <p className="text-lg font-mono font-bold text-zinc-900">
+                    RM {selectedItem.dailyRate?.toFixed(2)}{" "}
+                    <span className="text-xs font-normal text-zinc-500">/ day</span>
+                  </p>
+
+                  <div className="text-xs space-y-1 font-mono text-zinc-500">
+                    <p>Status: <span className="font-bold text-zinc-900">{selectedItem.stock > (selectedItem.rentedOut || 0) ? "In Stock" : "Out on Hire"}</span></p>
+                    {selectedItem.serialNumber && <p>S/N: {selectedItem.serialNumber}</p>}
+                    {selectedItem.lensMount && <p>Mount: {selectedItem.lensMount}</p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* DESCRIPTION & HIGHLIGHTS */}
+              <div className="space-y-4 text-xs">
+                {selectedItem.description && (
+                  <div>
+                    <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-1">
+                      Overview
+                    </h4>
+                    <p className="text-zinc-700 leading-relaxed font-sans text-sm">
+                      {selectedItem.description}
+                    </p>
+                  </div>
+                )}
+
+                {selectedItem.technicalHighlights && (
+                  <div>
+                    <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-1">
+                      Technical Highlights
+                    </h4>
+                    <p className="text-zinc-700 leading-relaxed font-mono whitespace-pre-line bg-zinc-50 p-3 rounded-xl border border-zinc-100">
+                      {selectedItem.technicalHighlights}
+                    </p>
+                  </div>
+                )}
+
+                {selectedItem.includedKit && (
+                  <div>
+                    <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-1">
+                      Included Accessories / Kit
+                    </h4>
+                    <p className="text-zinc-700 leading-relaxed font-mono whitespace-pre-line bg-zinc-50 p-3 rounded-xl border border-zinc-100">
+                      {selectedItem.includedKit}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* MODAL FOOTER BUTTON */}
+            <div className="pt-4 border-t border-zinc-100 mt-4 flex items-center gap-3">
+              <button
+                onClick={() => setSelectedItem(null)}
+                className="w-1/3 bg-zinc-100 text-zinc-700 font-bold py-3.5 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-200 transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+              <button
+                disabled={selectedItem.stock <= (selectedItem.rentedOut || 0)}
+                onClick={() => {
+                  addToCart(selectedItem);
+                  setSelectedItem(null);
+                }}
+                className="w-2/3 bg-zinc-900 text-white font-bold py-3.5 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-800 transition-all cursor-pointer disabled:opacity-40 shadow-md"
+              >
+                Add to Cart 🛒
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 6. SLIDE-OVER DISPATCH CART DRAWER */}
       {isCartOpen && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm transition-opacity">
           <div className="w-full max-w-md bg-white h-full p-6 sm:p-8 flex flex-col justify-between overflow-y-auto shadow-2xl animate-in slide-in-from-right duration-300">
