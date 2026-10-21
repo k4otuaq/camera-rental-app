@@ -272,15 +272,15 @@ export default function StorefrontPage() {
         </div>
       </section>
 
-      {/* 3. EQUIPMENT GRID */}
+      {/* 3. POLISHED EQUIPMENT GRID */}
       <main className="max-w-7xl mx-auto px-6 lg:px-12 py-8 min-h-[50vh]">
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-            {[1, 2, 3, 4, 5, 6].map((n) => (
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
               <div key={n} className="animate-pulse space-y-3">
-                <div className="bg-stone-100 aspect-square rounded-2xl"></div>
-                <div className="h-4 bg-stone-100 rounded w-3/4"></div>
-                <div className="h-3 bg-stone-100 rounded w-1/2"></div>
+                <div className="bg-zinc-100 aspect-square rounded-2xl"></div>
+                <div className="h-4 bg-zinc-100 rounded w-3/4"></div>
+                <div className="h-3 bg-zinc-100 rounded w-1/2"></div>
               </div>
             ))}
           </div>
@@ -292,7 +292,7 @@ export default function StorefrontPage() {
                 setSearchQuery("");
                 setActiveCategory("ALL");
               }}
-              className="mt-3 text-xs font-bold uppercase tracking-wider underline text-zinc-900 hover:opacity-75"
+              className="mt-3 text-xs font-bold uppercase tracking-wider underline text-zinc-900 hover:opacity-75 cursor-pointer"
             >
               Reset Filters
             </button>
@@ -302,50 +302,68 @@ export default function StorefrontPage() {
             {filteredEquipment.map((item) => {
               const isOut = item.stock <= (item.rentedOut || 0);
 
+              const mount = item.lensMount || item.lens_mount;
+              const resOut = item.resolutionOutput || item.resolution || item.resolution_output;
+              const desc = item.description;
+
               return (
                 <div
                   key={item.id}
                   className="group flex flex-col justify-between cursor-pointer"
                   onClick={() => setSelectedItem(item)}
                 >
-                  {/* STUDIO IMAGE CONTAINER */}
-                  <div className="relative aspect-square w-full bg-[#F5F4F0] rounded-2xl overflow-hidden flex items-center justify-center p-6 transition-transform duration-300 group-hover:-translate-y-1">
+                  {/* STUDIO IMAGE CONTAINER WITH HOVER ANIMATIONS */}
+                  <div className="relative aspect-square w-full bg-[#F6F5F2] rounded-2xl overflow-hidden flex items-center justify-center p-6 transition-all duration-500 ease-out group-hover:-translate-y-1.5 group-hover:shadow-xl group-hover:shadow-zinc-900/5">
                     {item.imageUrl ? (
                       <img
                         src={item.imageUrl}
                         alt={item.name}
-                        className="w-full h-full object-contain mix-blend-multiply transition-scale duration-300 group-hover:scale-105"
+                        className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 ease-out group-hover:scale-105"
                       />
                     ) : (
-                      <div className="text-4xl opacity-30">📷</div>
+                      <div className="text-4xl opacity-20">📷</div>
                     )}
 
-                    {/* DISCRETE AVAILABILITY TAG */}
+                    {/* ELEGANT GLASSMORPHISM BADGE */}
                     <div className="absolute top-3 left-3">
                       <span
-                        className={`text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full ${
+                        className={`inline-flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full backdrop-blur-md transition-all ${
                           isOut
-                            ? "bg-zinc-200 text-zinc-600"
-                            : "bg-white/80 backdrop-blur-md text-zinc-900 shadow-sm"
+                            ? "bg-zinc-200/80 text-zinc-500 border border-zinc-300/50"
+                            : "bg-white/85 text-zinc-900 border border-white/60 shadow-xs"
                         }`}
                       >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            isOut ? "bg-zinc-400" : "bg-emerald-500 animate-pulse"
+                          }`}
+                        />
                         {isOut ? "Out on Hire" : "In Stock"}
                       </span>
                     </div>
                   </div>
 
-                  {/* EQUIPMENT METADATA */}
-                  <div className="mt-3 flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="text-sm font-bold text-zinc-900 group-hover:text-zinc-600 transition-colors line-clamp-1">
+                  {/* METADATA BLOCK */}
+                  <div className="mt-3.5 flex items-start justify-between gap-3 px-0.5">
+                    <div className="space-y-1 min-w-0">
+                      <h3 className="text-sm font-bold text-zinc-900 group-hover:text-zinc-600 transition-colors line-clamp-1 tracking-tight">
                         {item.name}
                       </h3>
-                      <p className="text-xs font-mono text-zinc-500 mt-0.5">
-                        RM {item.dailyRate?.toFixed(2)} / day
+
+                      {/* SPEC SUBTITLE */}
+                      {(mount || resOut || desc) && (
+                        <p className="text-[10px] text-zinc-400 font-mono tracking-tight line-clamp-1">
+                          {[mount, resOut].filter(Boolean).join(" • ") || desc}
+                        </p>
+                      )}
+
+                      <p className="text-xs font-mono font-bold text-zinc-900 pt-0.5">
+                        RM {item.dailyRate?.toFixed(2)}{" "}
+                        <span className="text-[10px] font-normal text-zinc-400">/ day</span>
                       </p>
                     </div>
 
-                    {/* DIRECT ADD TO CART "+" BUTTON */}
+                    {/* QUICK ADD BUTTON */}
                     <button
                       disabled={isOut}
                       onClick={(e) => {
@@ -353,7 +371,7 @@ export default function StorefrontPage() {
                         addToCart(item);
                       }}
                       title="Add directly to cart"
-                      className="w-8 h-8 rounded-full bg-zinc-100 group-hover:bg-zinc-900 group-hover:text-white flex items-center justify-center text-sm font-bold transition-all cursor-pointer disabled:opacity-30 shrink-0"
+                      className="w-8 h-8 rounded-full bg-zinc-100 group-hover:bg-zinc-900 group-hover:text-white flex items-center justify-center text-sm font-bold transition-all duration-300 cursor-pointer disabled:opacity-20 shrink-0 shadow-xs hover:scale-105 active:scale-95"
                     >
                       +
                     </button>
@@ -383,161 +401,171 @@ export default function StorefrontPage() {
         </div>
       </footer>
 
-      {/* 5. DYNAMIC CUSTOMER ITEM DETAIL MODAL (LINKED TO STAFF PORTAL FIELDS) */}
-      {selectedItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white max-w-2xl w-full rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col justify-between border border-zinc-100 relative">
-            
-            {/* CLOSE BUTTON */}
-            <button
-              onClick={() => setSelectedItem(null)}
-              className="absolute top-6 right-6 w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 font-bold text-xs flex items-center justify-center cursor-pointer transition-colors z-10"
-            >
-              ✕
-            </button>
+      {/* 5. ITEM DETAIL MODAL */}
+      {selectedItem && (() => {
+        const desc = selectedItem.description;
+        const mount = selectedItem.lensMount || selectedItem.lens_mount;
+        const resOut = selectedItem.resolutionOutput || selectedItem.resolution || selectedItem.resolution_output;
+        const tech = selectedItem.technicalHighlights || selectedItem.technical_highlights;
+        const kit = selectedItem.includedKit || selectedItem.included_kit;
 
-            {/* MODAL MAIN CONTENT */}
-            <div className="overflow-y-auto pr-1 space-y-6">
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white max-w-2xl w-full rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col justify-between border border-zinc-100 relative">
               
-              {/* HEADER SECTION: IMAGE & PRIMARY SPECS */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start border-b border-zinc-100 pb-6">
-                
-                {/* STUDIO IMAGE CONTAINER */}
-                <div className="bg-[#F5F4F0] rounded-2xl aspect-square flex items-center justify-center p-6 relative">
-                  {selectedItem.imageUrl ? (
-                    <img
-                      src={selectedItem.imageUrl}
-                      alt={selectedItem.name}
-                      className="w-full h-full object-contain mix-blend-multiply"
-                    />
-                  ) : (
-                    <div className="text-5xl opacity-30">📷</div>
-                  )}
-                </div>
-
-                {/* METADATA & STAFF INPUTS */}
-                <div className="space-y-4">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest bg-zinc-100 text-zinc-600 px-2.5 py-1 rounded-full">
-                      {selectedItem.category || "CINEMA GEAR"}
-                    </span>
-                    <h2 className="text-2xl font-black text-zinc-900 mt-2 uppercase tracking-tight leading-tight">
-                      {selectedItem.name}
-                    </h2>
-                  </div>
-
-                  <div>
-                    <p className="text-xl font-mono font-bold text-zinc-900">
-                      RM {selectedItem.dailyRate?.toFixed(2)}{" "}
-                      <span className="text-xs font-normal text-zinc-500">/ day</span>
-                    </p>
-
-                    <div className="text-[11px] font-mono text-zinc-500 mt-2 space-y-1 bg-zinc-50 p-3 rounded-xl border border-zinc-100">
-                      <p>
-                        Status:{" "}
-                        <span className="font-bold text-zinc-900">
-                          {selectedItem.stock > (selectedItem.rentedOut || 0)
-                            ? "In Stock"
-                            : "Out on Hire"}
-                        </span>
-                      </p>
-                      {selectedItem.serialNumber && (
-                        <p>S/N: <span className="text-zinc-900 font-semibold">{selectedItem.serialNumber}</span></p>
-                      )}
-                      {selectedItem.lensMount && (
-                        <p>Lens Mount: <span className="text-zinc-900 font-semibold">{selectedItem.lensMount}</span></p>
-                      )}
-                      {(selectedItem.resolution || selectedItem.resolutionOutput) && (
-                        <p>Resolution/Output: <span className="text-zinc-900 font-semibold">{selectedItem.resolution || selectedItem.resolutionOutput}</span></p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* ITEM DESCRIPTION (KEYED IN BY STAFF) */}
-                  {selectedItem.description && (
-                    <div className="pt-2">
-                      <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-1">
-                        Item Description
-                      </h4>
-                      <p className="text-xs text-zinc-700 leading-relaxed font-sans">
-                        {selectedItem.description}
-                      </p>
-                    </div>
-                  )}
-
-                </div>
-              </div>
-
-              {/* TECHNICAL HIGHLIGHTS & INCLUDED KIT (KEYED IN BY STAFF) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                
-                {/* TECHNICAL HIGHLIGHTS */}
-                {selectedItem.technicalHighlights && (
-                  <div>
-                    <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-2">
-                      Technical Highlights
-                    </h4>
-                    <ul className="bg-zinc-50 p-3.5 rounded-2xl border border-zinc-100 space-y-1.5 font-mono text-[11px] text-zinc-700">
-                      {selectedItem.technicalHighlights
-                        .split("\n")
-                        .filter((line: string) => line.trim().length > 0)
-                        .map((line: string, idx: number) => (
-                          <li key={idx} className="flex items-start gap-2">
-                            <span className="text-zinc-400">•</span>
-                            <span>{line.trim()}</span>
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* INCLUDED KIT & ACCESSORIES */}
-                {selectedItem.includedKit && (
-                  <div>
-                    <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-2">
-                      Included Kit & Accessories
-                    </h4>
-                    <ul className="bg-zinc-50 p-3.5 rounded-2xl border border-zinc-100 space-y-1.5 font-mono text-[11px] text-zinc-700">
-                      {selectedItem.includedKit
-                        .split("\n")
-                        .filter((line: string) => line.trim().length > 0)
-                        .map((line: string, idx: number) => (
-                          <li key={idx} className="flex items-start gap-2">
-                            <span className="text-emerald-600 font-bold">✓</span>
-                            <span>{line.trim()}</span>
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                )}
-
-              </div>
-
-            </div>
-
-            {/* MODAL ACTION BUTTONS */}
-            <div className="pt-4 border-t border-zinc-100 mt-4 flex items-center gap-3">
+              {/* CLOSE BUTTON */}
               <button
                 onClick={() => setSelectedItem(null)}
-                className="w-1/3 bg-zinc-100 text-zinc-700 font-bold py-3.5 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-200 transition-colors cursor-pointer"
+                className="absolute top-6 right-6 w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 font-bold text-xs flex items-center justify-center cursor-pointer transition-colors z-10"
               >
-                Close
+                ✕
               </button>
-              <button
-                disabled={selectedItem.stock <= (selectedItem.rentedOut || 0)}
-                onClick={() => {
-                  addToCart(selectedItem);
-                  setSelectedItem(null);
-                }}
-                className="w-2/3 bg-zinc-900 text-white font-bold py-3.5 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-800 transition-all cursor-pointer disabled:opacity-40 shadow-md"
-              >
-                Add to Cart 🛒
-              </button>
-            </div>
 
+              {/* MODAL MAIN CONTENT */}
+              <div className="overflow-y-auto pr-1 space-y-6">
+                
+                {/* HERO GRID */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start border-b border-zinc-100 pb-6">
+                  
+                  {/* STUDIO IMAGE CONTAINER */}
+                  <div className="bg-[#F6F5F2] rounded-2xl aspect-square flex items-center justify-center p-6 relative">
+                    {selectedItem.imageUrl ? (
+                      <img
+                        src={selectedItem.imageUrl}
+                        alt={selectedItem.name}
+                        className="w-full h-full object-contain mix-blend-multiply"
+                      />
+                    ) : (
+                      <div className="text-5xl opacity-30">📷</div>
+                    )}
+                  </div>
+
+                  {/* METADATA & STAFF FIELDS */}
+                  <div className="space-y-4">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-widest bg-zinc-100 text-zinc-600 px-2.5 py-1 rounded-full">
+                        {selectedItem.category || "CINEMA GEAR"}
+                      </span>
+                      <h2 className="text-2xl font-black text-zinc-900 mt-2 uppercase tracking-tight leading-tight">
+                        {selectedItem.name}
+                      </h2>
+                    </div>
+
+                    <div>
+                      <p className="text-xl font-mono font-bold text-zinc-900">
+                        RM {selectedItem.dailyRate?.toFixed(2)}{" "}
+                        <span className="text-xs font-normal text-zinc-500">/ day</span>
+                      </p>
+
+                      <div className="text-[11px] font-mono text-zinc-500 mt-2 space-y-1 bg-zinc-50 p-3 rounded-xl border border-zinc-100">
+                        <p>
+                          Status:{" "}
+                          <span className="font-bold text-zinc-900">
+                            {selectedItem.stock > (selectedItem.rentedOut || 0)
+                              ? "In Stock"
+                              : "Out on Hire"}
+                          </span>
+                        </p>
+                        {selectedItem.serialNumber && (
+                          <p>S/N: <span className="text-zinc-900 font-semibold">{selectedItem.serialNumber}</span></p>
+                        )}
+                        {mount && (
+                          <p>Lens Mount: <span className="text-zinc-900 font-semibold">{mount}</span></p>
+                        )}
+                        {resOut && (
+                          <p>Resolution/Output: <span className="text-zinc-900 font-semibold">{resOut}</span></p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* STAFF ITEM DESCRIPTION */}
+                    {desc && (
+                      <div className="pt-2">
+                        <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-1">
+                          Item Description
+                        </h4>
+                        <p className="text-xs text-zinc-700 leading-relaxed font-sans">
+                          {desc}
+                        </p>
+                      </div>
+                    )}
+
+                  </div>
+                </div>
+
+                {/* TECHNICAL HIGHLIGHTS & INCLUDED KIT */}
+                {(tech || kit) && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    
+                    {/* TECHNICAL HIGHLIGHTS */}
+                    {tech && (
+                      <div>
+                        <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-2">
+                          Technical Highlights
+                        </h4>
+                        <ul className="bg-zinc-50 p-3.5 rounded-2xl border border-zinc-100 space-y-1.5 font-mono text-[11px] text-zinc-700">
+                          {tech
+                            .split("\n")
+                            .filter((line: string) => line.trim().length > 0)
+                            .map((line: string, idx: number) => (
+                              <li key={idx} className="flex items-start gap-2">
+                                <span className="text-zinc-400">•</span>
+                                <span>{line.trim()}</span>
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* INCLUDED KIT & ACCESSORIES */}
+                    {kit && (
+                      <div>
+                        <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-2">
+                          Included Kit & Accessories
+                        </h4>
+                        <ul className="bg-zinc-50 p-3.5 rounded-2xl border border-zinc-100 space-y-1.5 font-mono text-[11px] text-zinc-700">
+                          {kit
+                            .split("\n")
+                            .filter((line: string) => line.trim().length > 0)
+                            .map((line: string, idx: number) => (
+                              <li key={idx} className="flex items-start gap-2">
+                                <span className="text-emerald-600 font-bold">✓</span>
+                                <span>{line.trim()}</span>
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
+                    )}
+
+                  </div>
+                )}
+
+              </div>
+
+              {/* ACTION BUTTONS */}
+              <div className="pt-4 border-t border-zinc-100 mt-4 flex items-center gap-3">
+                <button
+                  onClick={() => setSelectedItem(null)}
+                  className="w-1/3 bg-zinc-100 text-zinc-700 font-bold py-3.5 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-200 transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+                <button
+                  disabled={selectedItem.stock <= (selectedItem.rentedOut || 0)}
+                  onClick={() => {
+                    addToCart(selectedItem);
+                    setSelectedItem(null);
+                  }}
+                  className="w-2/3 bg-zinc-900 text-white font-bold py-3.5 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-800 transition-all cursor-pointer disabled:opacity-40 shadow-md"
+                >
+                  Add to Cart 🛒
+                </button>
+              </div>
+
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* 6. SLIDE-OVER DISPATCH CART DRAWER */}
       {isCartOpen && (
@@ -628,50 +656,60 @@ export default function StorefrontPage() {
                     </div>
                   ) : (
                     <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-1">
-                      {cart.map(({ item, quantity }) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center justify-between border-b border-zinc-100 pb-3"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-zinc-50 rounded-lg p-1 flex items-center justify-center border border-zinc-100">
-                              {item.imageUrl ? (
-                                <img
-                                  src={item.imageUrl}
-                                  alt={item.name}
-                                  className="w-full h-full object-contain mix-blend-multiply"
-                                />
-                              ) : (
-                                "📷"
-                              )}
-                            </div>
-                            <div>
-                              <p className="text-xs font-bold text-zinc-900">{item.name}</p>
-                              <p className="text-[10px] font-mono text-zinc-500">
-                                RM {item.dailyRate?.toFixed(2)} / day
-                              </p>
-                            </div>
-                          </div>
+                      {cart.map(({ item, quantity }) => {
+                        const mount = item.lensMount || item.lens_mount;
+                        const resOut = item.resolutionOutput || item.resolution || item.resolution_output;
 
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => updateQuantity(item.id, quantity - 1)}
-                              className="w-6 h-6 rounded bg-zinc-100 hover:bg-zinc-200 font-bold text-xs flex items-center justify-center"
-                            >
-                              -
-                            </button>
-                            <span className="text-xs font-bold font-mono w-4 text-center">
-                              {quantity}
-                            </span>
-                            <button
-                              onClick={() => updateQuantity(item.id, quantity + 1)}
-                              className="w-6 h-6 rounded bg-zinc-100 hover:bg-zinc-200 font-bold text-xs flex items-center justify-center"
-                            >
-                              +
-                            </button>
+                        return (
+                          <div
+                            key={item.id}
+                            className="flex items-center justify-between border-b border-zinc-100 pb-3"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 bg-zinc-50 rounded-lg p-1 flex items-center justify-center border border-zinc-100 shrink-0">
+                                {item.imageUrl ? (
+                                  <img
+                                    src={item.imageUrl}
+                                    alt={item.name}
+                                    className="w-full h-full object-contain mix-blend-multiply"
+                                  />
+                                ) : (
+                                  "📷"
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold text-zinc-900">{item.name}</p>
+                                {(mount || resOut) && (
+                                  <p className="text-[9px] font-mono text-zinc-400">
+                                    {[mount, resOut].filter(Boolean).join(" • ")}
+                                  </p>
+                                )}
+                                <p className="text-[10px] font-mono text-zinc-500">
+                                  RM {item.dailyRate?.toFixed(2)} / day
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => updateQuantity(item.id, quantity - 1)}
+                                className="w-6 h-6 rounded bg-zinc-100 hover:bg-zinc-200 font-bold text-xs flex items-center justify-center cursor-pointer"
+                              >
+                                -
+                              </button>
+                              <span className="text-xs font-bold font-mono w-4 text-center">
+                                {quantity}
+                              </span>
+                              <button
+                                onClick={() => updateQuantity(item.id, quantity + 1)}
+                                className="w-6 h-6 rounded bg-zinc-100 hover:bg-zinc-200 font-bold text-xs flex items-center justify-center cursor-pointer"
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -681,7 +719,7 @@ export default function StorefrontPage() {
                   <button
                     type="button"
                     onClick={() => setCheckoutStep("cart")}
-                    className="text-xs font-bold text-zinc-500 hover:text-zinc-900 mb-2 block"
+                    className="text-xs font-bold text-zinc-500 hover:text-zinc-900 mb-2 block cursor-pointer"
                   >
                     ← Back to Selected Items
                   </button>
