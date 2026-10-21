@@ -173,7 +173,7 @@ export default function StorefrontPage() {
   return (
     <div className="min-h-screen bg-white text-zinc-900 font-sans selection:bg-zinc-200">
       
-      {/* 1. SINGLE CLEAN EDITORIAL HEADER */}
+      {/* 1. EDITORIAL HEADER (CLEAN TOP NAV WITHOUT STAFF PORTAL LINK) */}
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-zinc-100 px-6 lg:px-12 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           
@@ -200,9 +200,6 @@ export default function StorefrontPage() {
             <a href="#about" className="hover:text-zinc-900 transition-colors">
               About
             </a>
-            <Link href="/admin" className="hover:text-zinc-900 transition-colors opacity-60 hover:opacity-100">
-              Staff Portal 🔒
-            </Link>
           </nav>
 
           {/* SEARCH & CART BUTTON */}
@@ -362,20 +359,29 @@ export default function StorefrontPage() {
         )}
       </main>
 
-      {/* 4. SINGLE EDITORIAL FOOTER */}
+      {/* 4. EDITORIAL FOOTER WITH HIDDEN DISCRETE STAFF LOCK */}
       <footer id="about" className="border-t border-zinc-100 bg-zinc-50 mt-20 py-16 px-6 lg:px-12">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-8 relative">
           <div>
             <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-zinc-900">
               DON'T BE SHY, JUST SAY HI!
             </h2>
             <p className="text-xs text-zinc-500 mt-2 font-mono">
-              info@tuaqk4o.com • Kuala Lumpur, Malaysia
+              k4otuaqstudio@gmail.com • Kuala Lumpur, Malaysia
             </p>
           </div>
 
-          <div className="text-xs font-mono text-zinc-400">
-            © {new Date().getFullYear()} tuaq k4o™ tech & support. All rights reserved.
+          <div className="flex items-center gap-4 text-xs font-mono text-zinc-400">
+            <span>© {new Date().getFullYear()} tuaq k4o™ tech & support. All rights reserved.</span>
+            
+            {/* DISCRETE STAFF PORTAL LOCK BUTTON AT BOTTOM-RIGHT */}
+            <Link 
+              href="/admin" 
+              title="Staff Portal Login"
+              className="opacity-30 hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-zinc-200/50"
+            >
+              🔒
+            </Link>
           </div>
         </div>
       </footer>
@@ -394,7 +400,7 @@ export default function StorefrontPage() {
             onClick={() => setSelectedItem(null)}
           >
             <div 
-              className="bg-white max-w-2xl w-full rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col justify-between border border-zinc-100 relative transition-all duration-300 animate-in zoom-in-95 fade-in slide-in-from-bottom-4"
+              className="bg-white max-w-2xl w-full rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col justify-between border border-zinc-100 relative transition-all duration-300 animate-in zoom-in-95 fade-in slide-in-from-bottom-4 ease-out"
               onClick={(e) => e.stopPropagation()}
             >
               
