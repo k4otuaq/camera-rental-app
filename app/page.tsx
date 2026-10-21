@@ -383,7 +383,7 @@ export default function StorefrontPage() {
         </div>
       </footer>
 
-      {/* 5. ITEM DETAIL & SHORT DESCRIPTION MODAL */}
+      {/* 5. DYNAMIC CUSTOMER ITEM DETAIL MODAL (LINKED TO STAFF PORTAL FIELDS) */}
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white max-w-2xl w-full rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col justify-between border border-zinc-100 relative">
@@ -399,7 +399,7 @@ export default function StorefrontPage() {
             {/* MODAL MAIN CONTENT */}
             <div className="overflow-y-auto pr-1 space-y-6">
               
-              {/* TOP HERO GRID */}
+              {/* HEADER SECTION: IMAGE & PRIMARY SPECS */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start border-b border-zinc-100 pb-6">
                 
                 {/* STUDIO IMAGE CONTAINER */}
@@ -415,7 +415,7 @@ export default function StorefrontPage() {
                   )}
                 </div>
 
-                {/* RIGHT COLUMN: METADATA & SHORT DESCRIPTION */}
+                {/* METADATA & STAFF INPUTS */}
                 <div className="space-y-4">
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-widest bg-zinc-100 text-zinc-600 px-2.5 py-1 rounded-full">
@@ -431,7 +431,8 @@ export default function StorefrontPage() {
                       RM {selectedItem.dailyRate?.toFixed(2)}{" "}
                       <span className="text-xs font-normal text-zinc-500">/ day</span>
                     </p>
-                    <div className="text-[11px] font-mono text-zinc-500 mt-1 space-y-0.5">
+
+                    <div className="text-[11px] font-mono text-zinc-500 mt-2 space-y-1 bg-zinc-50 p-3 rounded-xl border border-zinc-100">
                       <p>
                         Status:{" "}
                         <span className="font-bold text-zinc-900">
@@ -441,54 +442,76 @@ export default function StorefrontPage() {
                         </span>
                       </p>
                       {selectedItem.serialNumber && (
-                        <p>S/N: {selectedItem.serialNumber}</p>
+                        <p>S/N: <span className="text-zinc-900 font-semibold">{selectedItem.serialNumber}</span></p>
                       )}
                       {selectedItem.lensMount && (
-                        <p>Mount: {selectedItem.lensMount}</p>
+                        <p>Lens Mount: <span className="text-zinc-900 font-semibold">{selectedItem.lensMount}</span></p>
+                      )}
+                      {(selectedItem.resolution || selectedItem.resolutionOutput) && (
+                        <p>Resolution/Output: <span className="text-zinc-900 font-semibold">{selectedItem.resolution || selectedItem.resolutionOutput}</span></p>
                       )}
                     </div>
                   </div>
 
-                  {/* SHORT DESCRIPTION / OVERVIEW AREA */}
-                  <div className="pt-2 border-t border-zinc-100">
-                    <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-1">
-                      Overview & Description
-                    </h4>
-                    <p className="text-xs text-zinc-700 leading-relaxed font-sans">
-                      {selectedItem.description ||
-                        "Professional high-performance cinema and production equipment, inspected and maintained for seamless set operation."}
-                    </p>
-                  </div>
+                  {/* ITEM DESCRIPTION (KEYED IN BY STAFF) */}
+                  {selectedItem.description && (
+                    <div className="pt-2">
+                      <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-1">
+                        Item Description
+                      </h4>
+                      <p className="text-xs text-zinc-700 leading-relaxed font-sans">
+                        {selectedItem.description}
+                      </p>
+                    </div>
+                  )}
 
                 </div>
               </div>
 
-              {/* LOWER SECTION: TECHNICAL HIGHLIGHTS & INCLUDED KIT */}
-              {(selectedItem.technicalHighlights || selectedItem.includedKit) && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  {selectedItem.technicalHighlights && (
-                    <div>
-                      <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-1.5">
-                        Technical Specs
-                      </h4>
-                      <p className="text-zinc-700 leading-relaxed font-mono text-[11px] bg-zinc-50 p-3 rounded-xl border border-zinc-100 whitespace-pre-line">
-                        {selectedItem.technicalHighlights}
-                      </p>
-                    </div>
-                  )}
+              {/* TECHNICAL HIGHLIGHTS & INCLUDED KIT (KEYED IN BY STAFF) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                
+                {/* TECHNICAL HIGHLIGHTS */}
+                {selectedItem.technicalHighlights && (
+                  <div>
+                    <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-2">
+                      Technical Highlights
+                    </h4>
+                    <ul className="bg-zinc-50 p-3.5 rounded-2xl border border-zinc-100 space-y-1.5 font-mono text-[11px] text-zinc-700">
+                      {selectedItem.technicalHighlights
+                        .split("\n")
+                        .filter((line: string) => line.trim().length > 0)
+                        .map((line: string, idx: number) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-zinc-400">•</span>
+                            <span>{line.trim()}</span>
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                )}
 
-                  {selectedItem.includedKit && (
-                    <div>
-                      <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-1.5">
-                        Included Accessories
-                      </h4>
-                      <p className="text-zinc-700 leading-relaxed font-mono text-[11px] bg-zinc-50 p-3 rounded-xl border border-zinc-100 whitespace-pre-line">
-                        {selectedItem.includedKit}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
+                {/* INCLUDED KIT & ACCESSORIES */}
+                {selectedItem.includedKit && (
+                  <div>
+                    <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-2">
+                      Included Kit & Accessories
+                    </h4>
+                    <ul className="bg-zinc-50 p-3.5 rounded-2xl border border-zinc-100 space-y-1.5 font-mono text-[11px] text-zinc-700">
+                      {selectedItem.includedKit
+                        .split("\n")
+                        .filter((line: string) => line.trim().length > 0)
+                        .map((line: string, idx: number) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-emerald-600 font-bold">✓</span>
+                            <span>{line.trim()}</span>
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                )}
+
+              </div>
 
             </div>
 
