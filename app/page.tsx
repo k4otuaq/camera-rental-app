@@ -383,7 +383,7 @@ export default function StorefrontPage() {
         </div>
       </footer>
 
-      {/* 5. ITEM DESCRIPTION MODAL */}
+      {/* 5. ITEM DETAIL & SHORT DESCRIPTION MODAL */}
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white max-w-2xl w-full rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col justify-between border border-zinc-100 relative">
@@ -391,16 +391,19 @@ export default function StorefrontPage() {
             {/* CLOSE BUTTON */}
             <button
               onClick={() => setSelectedItem(null)}
-              className="absolute top-6 right-6 w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 font-bold text-xs flex items-center justify-center cursor-pointer transition-colors z-10"
+              className="absolute top-6 right-6 w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 font-bold text-xs flex items-center justify-center cursor-pointer transition-colors z-10"
             >
               ✕
             </button>
 
+            {/* MODAL MAIN CONTENT */}
             <div className="overflow-y-auto pr-1 space-y-6">
               
-              {/* MODAL HEADER & IMAGE */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center border-b border-zinc-100 pb-6">
-                <div className="bg-[#F5F4F0] rounded-2xl aspect-square flex items-center justify-center p-6">
+              {/* TOP HERO GRID */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start border-b border-zinc-100 pb-6">
+                
+                {/* STUDIO IMAGE CONTAINER */}
+                <div className="bg-[#F5F4F0] rounded-2xl aspect-square flex items-center justify-center p-6 relative">
                   {selectedItem.imageUrl ? (
                     <img
                       src={selectedItem.imageUrl}
@@ -412,67 +415,84 @@ export default function StorefrontPage() {
                   )}
                 </div>
 
-                <div className="space-y-3">
+                {/* RIGHT COLUMN: METADATA & SHORT DESCRIPTION */}
+                <div className="space-y-4">
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-widest bg-zinc-100 text-zinc-600 px-2.5 py-1 rounded-full">
                       {selectedItem.category || "CINEMA GEAR"}
                     </span>
-                    <h2 className="text-2xl font-black text-zinc-900 mt-2 uppercase tracking-tight">
+                    <h2 className="text-2xl font-black text-zinc-900 mt-2 uppercase tracking-tight leading-tight">
                       {selectedItem.name}
                     </h2>
                   </div>
 
-                  <p className="text-lg font-mono font-bold text-zinc-900">
-                    RM {selectedItem.dailyRate?.toFixed(2)}{" "}
-                    <span className="text-xs font-normal text-zinc-500">/ day</span>
-                  </p>
-
-                  <div className="text-xs space-y-1 font-mono text-zinc-500">
-                    <p>Status: <span className="font-bold text-zinc-900">{selectedItem.stock > (selectedItem.rentedOut || 0) ? "In Stock" : "Out on Hire"}</span></p>
-                    {selectedItem.serialNumber && <p>S/N: {selectedItem.serialNumber}</p>}
-                    {selectedItem.lensMount && <p>Mount: {selectedItem.lensMount}</p>}
+                  <div>
+                    <p className="text-xl font-mono font-bold text-zinc-900">
+                      RM {selectedItem.dailyRate?.toFixed(2)}{" "}
+                      <span className="text-xs font-normal text-zinc-500">/ day</span>
+                    </p>
+                    <div className="text-[11px] font-mono text-zinc-500 mt-1 space-y-0.5">
+                      <p>
+                        Status:{" "}
+                        <span className="font-bold text-zinc-900">
+                          {selectedItem.stock > (selectedItem.rentedOut || 0)
+                            ? "In Stock"
+                            : "Out on Hire"}
+                        </span>
+                      </p>
+                      {selectedItem.serialNumber && (
+                        <p>S/N: {selectedItem.serialNumber}</p>
+                      )}
+                      {selectedItem.lensMount && (
+                        <p>Mount: {selectedItem.lensMount}</p>
+                      )}
+                    </div>
                   </div>
+
+                  {/* SHORT DESCRIPTION / OVERVIEW AREA */}
+                  <div className="pt-2 border-t border-zinc-100">
+                    <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-1">
+                      Overview & Description
+                    </h4>
+                    <p className="text-xs text-zinc-700 leading-relaxed font-sans">
+                      {selectedItem.description ||
+                        "Professional high-performance cinema and production equipment, inspected and maintained for seamless set operation."}
+                    </p>
+                  </div>
+
                 </div>
               </div>
 
-              {/* DESCRIPTION & HIGHLIGHTS */}
-              <div className="space-y-4 text-xs">
-                {selectedItem.description && (
-                  <div>
-                    <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-1">
-                      Overview
-                    </h4>
-                    <p className="text-zinc-700 leading-relaxed font-sans text-sm">
-                      {selectedItem.description}
-                    </p>
-                  </div>
-                )}
+              {/* LOWER SECTION: TECHNICAL HIGHLIGHTS & INCLUDED KIT */}
+              {(selectedItem.technicalHighlights || selectedItem.includedKit) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  {selectedItem.technicalHighlights && (
+                    <div>
+                      <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-1.5">
+                        Technical Specs
+                      </h4>
+                      <p className="text-zinc-700 leading-relaxed font-mono text-[11px] bg-zinc-50 p-3 rounded-xl border border-zinc-100 whitespace-pre-line">
+                        {selectedItem.technicalHighlights}
+                      </p>
+                    </div>
+                  )}
 
-                {selectedItem.technicalHighlights && (
-                  <div>
-                    <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-1">
-                      Technical Highlights
-                    </h4>
-                    <p className="text-zinc-700 leading-relaxed font-mono whitespace-pre-line bg-zinc-50 p-3 rounded-xl border border-zinc-100">
-                      {selectedItem.technicalHighlights}
-                    </p>
-                  </div>
-                )}
+                  {selectedItem.includedKit && (
+                    <div>
+                      <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-1.5">
+                        Included Accessories
+                      </h4>
+                      <p className="text-zinc-700 leading-relaxed font-mono text-[11px] bg-zinc-50 p-3 rounded-xl border border-zinc-100 whitespace-pre-line">
+                        {selectedItem.includedKit}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
-                {selectedItem.includedKit && (
-                  <div>
-                    <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-1">
-                      Included Accessories / Kit
-                    </h4>
-                    <p className="text-zinc-700 leading-relaxed font-mono whitespace-pre-line bg-zinc-50 p-3 rounded-xl border border-zinc-100">
-                      {selectedItem.includedKit}
-                    </p>
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* MODAL FOOTER BUTTON */}
+            {/* MODAL ACTION BUTTONS */}
             <div className="pt-4 border-t border-zinc-100 mt-4 flex items-center gap-3">
               <button
                 onClick={() => setSelectedItem(null)}
