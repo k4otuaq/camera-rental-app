@@ -104,7 +104,7 @@ export default function StorefrontPage() {
     if (element) {
       const navOffset = 80; // Account for sticky header height
       const targetY = element.getBoundingClientRect().top + window.pageYOffset - navOffset;
-      customSmoothScrollTo(Math.max(0, targetY), 1200);
+      customSmoothScrollTo(Math.max(0, targetY), 1400);
     }
   };
 
@@ -113,7 +113,7 @@ export default function StorefrontPage() {
     e.preventDefault();
     setSearchQuery("");
     setActiveCategory("ALL");
-    customSmoothScrollTo(0, 1200);
+    customSmoothScrollTo(0, 1400);
   };
 
   // Cart Functions
@@ -495,7 +495,7 @@ export default function StorefrontPage() {
               
               {/* WHATSAPP GLASS BUTTON */}
               <a
-                href="https://wa.me/60123456789"
+                href="https://wa.me/601163308322"
                 target="_blank"
                 rel="noreferrer"
                 className="group flex items-center gap-3.5 bg-white/60 hover:bg-white/90 backdrop-blur-xl border border-white/80 px-6 py-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 active:scale-95 cursor-pointer"
