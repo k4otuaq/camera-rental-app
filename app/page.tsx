@@ -171,19 +171,23 @@ export default function StorefrontPage() {
     return matchesSearch && matchesCategory;
   });
 
-  // FAQ Content Array
+  // FAQ Content Array (Updated with your custom copy)
   const faqs = [
     {
+      q: "Reservation and booking process?",
+      a: "To reserve equipment, simply add your desired gear to the dispatch cart, select your rental dates, and proceed to checkout. Our rental desk will confirm availability and issue an official dispatch quote. If any gear is unavailable, we will notify you promptly.",
+    },
+    {
       q: "What are the equipment pick-up and return timings?",
-      a: "Pick-ups are available after 4:00 PM the day prior to your shoot date. Equipment returns must be completed by 10:00 AM the day immediately following your rental period.",
+      a: "Pick-ups are available before 4:00 PM the day prior to your shoot date. Equipment returns must be completed by 12:00 - 13:00pm the day immediately following your rental period.",
     },
     {
       q: "What verification documents are required for first-time renters?",
-      a: "First-time renters must present a valid NRIC or Passport, an active phone number, and a link to a recent production portfolio, company SSM registration, or social profile.",
+      a: "First-time renters must present a valid NRIC or Passport, an active phone number, email, and company SSM registration or social profile.",
     },
     {
       q: "How do security deposits and payments work?",
-      a: "Full rental payment is processed via Bank Transfer, Touch 'n Go E-Wallet, or Cash on Pickup prior to gear release. A refundable deposit may apply depending on equipment tier.",
+      a: "Full rental payment is processed before/during collection of the equipment via Local/International Bank Transfer, E-Wallet, or Cash on Pickup prior to gear release. A refundable deposit may apply depending on equipment tier.",
     },
     {
       q: "What happens in the event of equipment damage or late returns?",
@@ -191,7 +195,7 @@ export default function StorefrontPage() {
     },
     {
       q: "Do you offer courier dispatch or site delivery?",
-      a: "Yes! In addition to self-pickup at our Kuala Lumpur studio, we can arrange dedicated courier dispatch across Klang Valley upon request.",
+      a: "Yes! In addition to self-pickup at our Kuala Lumpur studio, we can arrange dedicated courier dispatch across Klang Valley upon request and the additional cost shall be bear by the renter.",
     },
   ];
 
@@ -390,72 +394,96 @@ export default function StorefrontPage() {
         )}
       </main>
 
-      {/* 4. PRODUCTION INQUIRY BANNER & EDITORIAL FOOTER */}
-      <footer id="about" className="mt-20">
-        
-        {/* DARK PRODUCTION CALLOUT BANNER */}
-        <div className="bg-zinc-900 text-white px-6 sm:px-12 py-16 lg:py-20">
-          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-10">
+      {/* 4. FOOTER BANNER WITH GLASS MATERIAL CONTACT ICONS & RIGHT-ALIGNED FOOTER DETAILS */}
+      <footer id="about" className="mt-16 px-6 lg:px-12 pb-12">
+        <div className="max-w-7xl mx-auto bg-[#F6F5F2] border border-zinc-200/60 rounded-3xl p-8 sm:p-14 lg:p-16 relative overflow-hidden">
+          
+          {/* Subtle Ambient Glass Glow Effect */}
+          <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-zinc-200/50 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
             
-            <div className="space-y-3 max-w-2xl">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-                START A PROJECT
-              </p>
-              <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight leading-none text-white">
-                TELL US ABOUT YOUR PRODUCTION.
+            {/* HEADING & DISPATCH DESCRIPTION */}
+            <div className="space-y-3 max-w-xl">
+              <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight leading-none text-zinc-900">
+                DON'T BE SHY, JUST SAY HI!
               </h2>
-              <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-sans pt-1">
+              <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed font-sans pt-1">
                 Send your equipment list and shoot dates. Our rental desk will confirm gear availability and issue an official dispatch quote for your project.
-              </p>
-              <p className="text-[11px] font-mono text-zinc-500 pt-2">
-                Studio Location: Kuala Lumpur, Malaysia
               </p>
             </div>
 
-            {/* ACTION CTA BUTTONS */}
-            <div className="flex flex-col sm:flex-row gap-4 shrink-0">
+            {/* GLASS MATERIAL CONTACT BUTTONS */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 shrink-0">
+              
+              {/* WHATSAPP GLASS BUTTON */}
               <a
                 href="https://wa.me/60123456789"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center justify-center bg-white text-zinc-900 font-extrabold px-8 py-4 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-200 transition-all shadow-md text-center cursor-pointer"
+                className="group flex items-center gap-3.5 bg-white/60 hover:bg-white/90 backdrop-blur-xl border border-white/80 px-6 py-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 active:scale-95 cursor-pointer"
               >
-                WHATSAPP US →
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">WhatsApp</p>
+                  <p className="text-xs font-bold text-zinc-900 font-mono">Chat Direct →</p>
+                </div>
               </a>
+
+              {/* EMAIL GLASS BUTTON */}
               <a
                 href="mailto:k4otuaqstudio@gmail.com"
-                className="inline-flex items-center justify-center bg-zinc-800 text-white border border-zinc-700 font-bold px-8 py-4 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-700 transition-all text-center cursor-pointer"
+                className="group flex items-center gap-3.5 bg-white/60 hover:bg-white/90 backdrop-blur-xl border border-white/80 px-6 py-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 active:scale-95 cursor-pointer"
               >
-                K4OTUAQSTUDIO@GMAIL.COM
+                <div className="w-10 h-10 rounded-xl bg-zinc-900/10 border border-zinc-900/15 text-zinc-900 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <svg className="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Email Us</p>
+                  <p className="text-xs font-bold text-zinc-900 font-mono">Send Mail →</p>
+                </div>
               </a>
+
             </div>
 
           </div>
         </div>
 
-        {/* COPYRIGHT BOTTOM BAR WITH DISCRETE STAFF LOCK */}
-        <div className="bg-black text-zinc-500 text-xs font-mono py-8 px-6 lg:px-12 border-t border-zinc-800">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-[11px]">
-              © {new Date().getFullYear()} tuaq k4o™ tech & support. All rights reserved.
-            </p>
+        {/* COPYRIGHT BOTTOM BAR WITH EMAIL/LOCATION ON THE RIGHT SIDE ABOVE COPYRIGHT */}
+        <div className="max-w-7xl mx-auto mt-10 pt-6 border-t border-zinc-100 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 text-xs font-mono text-zinc-400">
+          
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsFaqOpen(true)}
+              className="hover:text-zinc-900 transition-colors cursor-pointer"
+            >
+              Rental FAQ
+            </button>
+          </div>
 
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setIsFaqOpen(true)}
-                className="hover:text-zinc-300 transition-colors cursor-pointer"
-              >
-                Rental FAQ
-              </button>
+          {/* RIGHT SIDE: EMAIL & LOCATION STACKED ABOVE COPYRIGHT */}
+          <div className="text-left sm:text-right space-y-1">
+            <p className="text-xs font-semibold text-zinc-600">
+              k4otuaqstudio@gmail.com • Kuala Lumpur, Malaysia
+            </p>
+            <div className="flex items-center justify-start sm:justify-end gap-3 text-[11px] text-zinc-400">
+              <span>© {new Date().getFullYear()} tuaq k4o™ tech & support. All rights reserved.</span>
               <Link 
                 href="/admin" 
                 title="Staff Portal Login"
-                className="opacity-30 hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-zinc-800 text-zinc-400"
+                className="opacity-30 hover:opacity-100 transition-opacity p-1 rounded hover:bg-zinc-100 text-zinc-600"
               >
                 🔒
               </Link>
             </div>
           </div>
+
         </div>
 
       </footer>
