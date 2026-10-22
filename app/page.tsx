@@ -10,8 +10,9 @@ export default function StorefrontPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("ALL");
 
-  // Item Detail Modal State
+  // Item Detail & FAQ Modal State
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
+  const [isFaqOpen, setIsFaqOpen] = useState(false);
 
   // Cart & Dispatch Drawer State
   const [cart, setCart] = useState<{ item: any; quantity: number }[]>([]);
@@ -170,10 +171,34 @@ export default function StorefrontPage() {
     return matchesSearch && matchesCategory;
   });
 
+  // FAQ Content Array
+  const faqs = [
+    {
+      q: "What are the equipment pick-up and return timings?",
+      a: "Pick-ups are available after 4:00 PM the day prior to your shoot date. Equipment returns must be completed by 10:00 AM the day immediately following your rental period.",
+    },
+    {
+      q: "What verification documents are required for first-time renters?",
+      a: "First-time renters must present a valid NRIC or Passport, an active phone number, and a link to a recent production portfolio, company SSM registration, or social profile.",
+    },
+    {
+      q: "How do security deposits and payments work?",
+      a: "Full rental payment is processed via Bank Transfer, Touch 'n Go E-Wallet, or Cash on Pickup prior to gear release. A refundable deposit may apply depending on equipment tier.",
+    },
+    {
+      q: "What happens in the event of equipment damage or late returns?",
+      a: "Renters assume full responsibility for equipment during the hire period. Unannounced late returns incur an additional full-day rate per gear item.",
+    },
+    {
+      q: "Do you offer courier dispatch or site delivery?",
+      a: "Yes! In addition to self-pickup at our Kuala Lumpur studio, we can arrange dedicated courier dispatch across Klang Valley upon request.",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-white text-zinc-900 font-sans selection:bg-zinc-200">
       
-      {/* 1. EDITORIAL HEADER (CLEAN TOP NAV WITHOUT STAFF PORTAL LINK) */}
+      {/* 1. EDITORIAL HEADER */}
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-zinc-100 px-6 lg:px-12 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           
@@ -192,7 +217,7 @@ export default function StorefrontPage() {
             </p>
           </Link>
 
-          {/* DESKTOP NAV */}
+          {/* DESKTOP NAV WITH FAQ TRIGGER */}
           <nav className="hidden md:flex items-center gap-8 text-xs font-medium uppercase tracking-wider text-zinc-600">
             <a href="#catalogue" className="hover:text-zinc-900 transition-colors">
               Catalogue
@@ -200,6 +225,12 @@ export default function StorefrontPage() {
             <a href="#about" className="hover:text-zinc-900 transition-colors">
               About
             </a>
+            <button
+              onClick={() => setIsFaqOpen(true)}
+              className="hover:text-zinc-900 transition-colors cursor-pointer uppercase font-medium"
+            >
+              FAQ
+            </button>
           </nav>
 
           {/* SEARCH & CART BUTTON */}
@@ -359,34 +390,139 @@ export default function StorefrontPage() {
         )}
       </main>
 
-      {/* 4. EDITORIAL FOOTER WITH HIDDEN DISCRETE STAFF LOCK */}
-      <footer id="about" className="border-t border-zinc-100 bg-zinc-50 mt-20 py-16 px-6 lg:px-12">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-8 relative">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-zinc-900">
-              DON'T BE SHY, JUST SAY HI!
-            </h2>
-            <p className="text-xs text-zinc-500 mt-2 font-mono">
-              k4otuaqstudio@gmail.com • Kuala Lumpur, Malaysia
-            </p>
-          </div>
-
-          <div className="flex items-center gap-4 text-xs font-mono text-zinc-400">
-            <span>© {new Date().getFullYear()} tuaq k4o™ tech & support. All rights reserved.</span>
+      {/* 4. PRODUCTION INQUIRY BANNER & EDITORIAL FOOTER */}
+      <footer id="about" className="mt-20">
+        
+        {/* DARK PRODUCTION CALLOUT BANNER */}
+        <div className="bg-zinc-900 text-white px-6 sm:px-12 py-16 lg:py-20">
+          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-10">
             
-            {/* DISCRETE STAFF PORTAL LOCK BUTTON AT BOTTOM-RIGHT */}
-            <Link 
-              href="/admin" 
-              title="Staff Portal Login"
-              className="opacity-30 hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-zinc-200/50"
-            >
-              🔒
-            </Link>
+            <div className="space-y-3 max-w-2xl">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                START A PROJECT
+              </p>
+              <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight leading-none text-white">
+                TELL US ABOUT YOUR PRODUCTION.
+              </h2>
+              <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-sans pt-1">
+                Send your equipment list and shoot dates. Our rental desk will confirm gear availability and issue an official dispatch quote for your project.
+              </p>
+              <p className="text-[11px] font-mono text-zinc-500 pt-2">
+                Studio Location: Kuala Lumpur, Malaysia
+              </p>
+            </div>
+
+            {/* ACTION CTA BUTTONS */}
+            <div className="flex flex-col sm:flex-row gap-4 shrink-0">
+              <a
+                href="https://wa.me/60123456789"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center bg-white text-zinc-900 font-extrabold px-8 py-4 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-200 transition-all shadow-md text-center cursor-pointer"
+              >
+                WHATSAPP US →
+              </a>
+              <a
+                href="mailto:k4otuaqstudio@gmail.com"
+                className="inline-flex items-center justify-center bg-zinc-800 text-white border border-zinc-700 font-bold px-8 py-4 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-700 transition-all text-center cursor-pointer"
+              >
+                K4OTUAQSTUDIO@GMAIL.COM
+              </a>
+            </div>
+
           </div>
         </div>
+
+        {/* COPYRIGHT BOTTOM BAR WITH DISCRETE STAFF LOCK */}
+        <div className="bg-black text-zinc-500 text-xs font-mono py-8 px-6 lg:px-12 border-t border-zinc-800">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p className="text-[11px]">
+              © {new Date().getFullYear()} tuaq k4o™ tech & support. All rights reserved.
+            </p>
+
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setIsFaqOpen(true)}
+                className="hover:text-zinc-300 transition-colors cursor-pointer"
+              >
+                Rental FAQ
+              </button>
+              <Link 
+                href="/admin" 
+                title="Staff Portal Login"
+                className="opacity-30 hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-zinc-800 text-zinc-400"
+              >
+                🔒
+              </Link>
+            </div>
+          </div>
+        </div>
+
       </footer>
 
-      {/* 5. ITEM DETAIL MODAL WITH SMOOTH ZOOM & SLIDE ANIMATION */}
+      {/* 5. MINIMALIST FAQ POPUP MODAL */}
+      {isFaqOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/60 backdrop-blur-md transition-all duration-300 animate-in fade-in"
+          onClick={() => setIsFaqOpen(false)}
+        >
+          <div 
+            className="bg-white max-w-3xl w-full rounded-3xl p-6 sm:p-10 shadow-2xl overflow-hidden max-h-[85vh] flex flex-col justify-between border border-zinc-100 relative transition-all duration-300 animate-in zoom-in-95 fade-in slide-in-from-bottom-4 ease-out"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* CLOSE BUTTON */}
+            <button
+              onClick={() => setIsFaqOpen(false)}
+              className="absolute top-6 right-6 w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 font-bold text-xs flex items-center justify-center cursor-pointer transition-colors z-10"
+            >
+              ✕
+            </button>
+
+            {/* HEADER */}
+            <div className="border-b border-zinc-100 pb-6 pr-8">
+              <span className="text-[10px] font-bold uppercase tracking-widest bg-zinc-100 text-zinc-600 px-3 py-1 rounded-full">
+                RENTAL DESK DIRECTORY
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-zinc-900 uppercase tracking-tight mt-3">
+                FREQUENTLY ASKED QUESTIONS
+              </h2>
+              <p className="text-xs text-zinc-500 font-mono mt-1">
+                Essential guidelines for renting production gear at tuaq k4o™
+              </p>
+            </div>
+
+            {/* FAQ ITEM LIST */}
+            <div className="overflow-y-auto py-6 space-y-6 pr-2">
+              {faqs.map((faq, idx) => (
+                <div key={idx} className="bg-zinc-50 p-5 rounded-2xl border border-zinc-100 space-y-2">
+                  <h3 className="text-xs font-black uppercase tracking-wide text-zinc-900 flex items-center gap-2">
+                    <span className="text-zinc-400 font-mono text-[10px]">0{idx + 1}.</span>
+                    {faq.q}
+                  </h3>
+                  <p className="text-xs text-zinc-600 leading-relaxed font-sans pl-5">
+                    {faq.a}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* FOOTER ACTION */}
+            <div className="pt-4 border-t border-zinc-100 flex items-center justify-between gap-4">
+              <p className="text-[11px] font-mono text-zinc-400 hidden sm:block">
+                Have a unique production inquiry?
+              </p>
+              <button
+                onClick={() => setIsFaqOpen(false)}
+                className="w-full sm:w-auto bg-zinc-900 text-white font-bold px-8 py-3.5 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                Close FAQ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. EXPANDED LARGE ITEM DETAIL MODAL */}
       {selectedItem && (() => {
         const desc = selectedItem.description;
         const mount = selectedItem.lensMount || selectedItem.lens_mount;
@@ -396,28 +532,30 @@ export default function StorefrontPage() {
 
         return (
           <div 
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md transition-all duration-300 animate-in fade-in"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/60 backdrop-blur-md transition-all duration-300 animate-in fade-in"
             onClick={() => setSelectedItem(null)}
           >
             <div 
-              className="bg-white max-w-2xl w-full rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col justify-between border border-zinc-100 relative transition-all duration-300 animate-in zoom-in-95 fade-in slide-in-from-bottom-4 ease-out"
+              className="bg-white max-w-5xl lg:max-w-6xl w-full rounded-3xl p-6 sm:p-10 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col justify-between border border-zinc-100 relative transition-all duration-300 animate-in zoom-in-95 fade-in slide-in-from-bottom-4 ease-out"
               onClick={(e) => e.stopPropagation()}
             >
               
               {/* CLOSE BUTTON */}
               <button
                 onClick={() => setSelectedItem(null)}
-                className="absolute top-6 right-6 w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 font-bold text-xs flex items-center justify-center cursor-pointer transition-colors z-10"
+                className="absolute top-6 right-6 w-9 h-9 rounded-full bg-zinc-100 hover:bg-zinc-200 font-bold text-xs flex items-center justify-center cursor-pointer transition-colors z-10"
               >
                 ✕
               </button>
 
-              {/* CONTENT */}
-              <div className="overflow-y-auto pr-1 space-y-6">
+              {/* CONTENT AREA */}
+              <div className="overflow-y-auto pr-2 space-y-8">
                 
-                {/* HERO */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start border-b border-zinc-100 pb-6">
-                  <div className="bg-[#F6F5F2] rounded-2xl aspect-square flex items-center justify-center p-6 relative">
+                {/* HERO GRID */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start border-b border-zinc-100 pb-8">
+                  
+                  {/* STUDIO IMAGE CONTAINER */}
+                  <div className="md:col-span-5 bg-[#F6F5F2] rounded-2xl aspect-square flex items-center justify-center p-8 relative">
                     {selectedItem.imageUrl ? (
                       <img
                         src={selectedItem.imageUrl}
@@ -425,53 +563,66 @@ export default function StorefrontPage() {
                         className="w-full h-full object-contain mix-blend-multiply"
                       />
                     ) : (
-                      <div className="text-5xl opacity-30">📷</div>
+                      <div className="text-6xl opacity-30">📷</div>
                     )}
                   </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest bg-zinc-100 text-zinc-600 px-2.5 py-1 rounded-full">
+                  {/* METADATA & EXPANDED DESCRIPTION AREA */}
+                  <div className="md:col-span-7 space-y-5">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-[10px] font-bold uppercase tracking-widest bg-zinc-100 text-zinc-600 px-3 py-1 rounded-full">
                         {selectedItem.category || "CINEMA GEAR"}
                       </span>
-                      <h2 className="text-2xl font-black text-zinc-900 mt-2 uppercase tracking-tight leading-tight">
-                        {selectedItem.name}
-                      </h2>
+                      <span className="text-xs font-mono font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+                        {selectedItem.stock > (selectedItem.rentedOut || 0) ? "• In Stock" : "• Out on Hire"}
+                      </span>
                     </div>
 
                     <div>
-                      <p className="text-xl font-mono font-bold text-zinc-900">
+                      <h2 className="text-3xl sm:text-4xl font-black text-zinc-900 uppercase tracking-tight leading-none">
+                        {selectedItem.name}
+                      </h2>
+                      <p className="text-2xl font-mono font-extrabold text-zinc-900 mt-3">
                         RM {selectedItem.dailyRate?.toFixed(2)}{" "}
-                        <span className="text-xs font-normal text-zinc-500">/ day</span>
+                        <span className="text-xs font-normal text-zinc-400">/ day</span>
                       </p>
-
-                      <div className="text-[11px] font-mono text-zinc-500 mt-2 space-y-1 bg-zinc-50 p-3 rounded-xl border border-zinc-100">
-                        <p>
-                          Status:{" "}
-                          <span className="font-bold text-zinc-900">
-                            {selectedItem.stock > (selectedItem.rentedOut || 0)
-                              ? "In Stock"
-                              : "Out on Hire"}
-                          </span>
-                        </p>
-                        {selectedItem.serialNumber && (
-                          <p>S/N: <span className="text-zinc-900 font-semibold">{selectedItem.serialNumber}</span></p>
-                        )}
-                        {mount && (
-                          <p>Lens Mount: <span className="text-zinc-900 font-semibold">{mount}</span></p>
-                        )}
-                        {resOut && (
-                          <p>Resolution/Output: <span className="text-zinc-900 font-semibold">{resOut}</span></p>
-                        )}
-                      </div>
                     </div>
 
+                    {/* SPECS GRID */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs font-mono text-zinc-600 bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-zinc-400">Status</p>
+                        <p className="font-bold text-zinc-900 mt-0.5">
+                          {selectedItem.stock > (selectedItem.rentedOut || 0) ? "In Stock" : "Out on Hire"}
+                        </p>
+                      </div>
+                      {selectedItem.serialNumber && (
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-zinc-400">S/N</p>
+                          <p className="font-semibold text-zinc-900 mt-0.5">{selectedItem.serialNumber}</p>
+                        </div>
+                      )}
+                      {mount && (
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-zinc-400">Lens Mount</p>
+                          <p className="font-semibold text-zinc-900 mt-0.5">{mount}</p>
+                        </div>
+                      )}
+                      {resOut && (
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-zinc-400">Resolution</p>
+                          <p className="font-semibold text-zinc-900 mt-0.5">{resOut}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* EXPANDED DESCRIPTION BOX */}
                     {desc && (
                       <div className="pt-2">
-                        <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-1">
-                          Item Description
+                        <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-2">
+                          Item Overview & Description
                         </h4>
-                        <p className="text-xs text-zinc-700 leading-relaxed font-sans">
+                        <p className="text-sm text-zinc-700 leading-relaxed font-sans bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
                           {desc}
                         </p>
                       </div>
@@ -480,22 +631,22 @@ export default function StorefrontPage() {
                   </div>
                 </div>
 
-                {/* TECH & KIT */}
+                {/* TECHNICAL SPECS & INCLUDED KIT */}
                 {(tech || kit) && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
                     {tech && (
                       <div>
-                        <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-2">
-                          Technical Highlights
+                        <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-2.5">
+                          Technical Specifications
                         </h4>
-                        <ul className="bg-zinc-50 p-3.5 rounded-2xl border border-zinc-100 space-y-1.5 font-mono text-[11px] text-zinc-700">
+                        <ul className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100 space-y-2 font-mono text-[11px] text-zinc-700">
                           {tech
                             .split("\n")
                             .filter((line: string) => line.trim().length > 0)
                             .map((line: string, idx: number) => (
-                              <li key={idx} className="flex items-start gap-2">
+                              <li key={idx} className="flex items-start gap-2.5">
                                 <span className="text-zinc-400">•</span>
-                                <span>{line.trim()}</span>
+                                <span className="leading-relaxed">{line.trim()}</span>
                               </li>
                             ))}
                         </ul>
@@ -504,17 +655,17 @@ export default function StorefrontPage() {
 
                     {kit && (
                       <div>
-                        <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-2">
+                        <h4 className="font-bold uppercase tracking-wider text-zinc-400 text-[10px] mb-2.5">
                           Included Kit & Accessories
                         </h4>
-                        <ul className="bg-zinc-50 p-3.5 rounded-2xl border border-zinc-100 space-y-1.5 font-mono text-[11px] text-zinc-700">
+                        <ul className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100 space-y-2 font-mono text-[11px] text-zinc-700">
                           {kit
                             .split("\n")
                             .filter((line: string) => line.trim().length > 0)
                             .map((line: string, idx: number) => (
-                              <li key={idx} className="flex items-start gap-2">
+                              <li key={idx} className="flex items-start gap-2.5">
                                 <span className="text-emerald-600 font-bold">✓</span>
-                                <span>{line.trim()}</span>
+                                <span className="leading-relaxed">{line.trim()}</span>
                               </li>
                             ))}
                         </ul>
@@ -526,10 +677,10 @@ export default function StorefrontPage() {
               </div>
 
               {/* ACTION BUTTONS */}
-              <div className="pt-4 border-t border-zinc-100 mt-4 flex items-center gap-3">
+              <div className="pt-6 border-t border-zinc-100 mt-6 flex items-center gap-4">
                 <button
                   onClick={() => setSelectedItem(null)}
-                  className="w-1/3 bg-zinc-100 text-zinc-700 font-bold py-3.5 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-200 transition-colors cursor-pointer"
+                  className="w-1/4 bg-zinc-100 text-zinc-700 font-bold py-4 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-200 transition-colors cursor-pointer"
                 >
                   Close
                 </button>
@@ -539,9 +690,9 @@ export default function StorefrontPage() {
                     addToCart(selectedItem);
                     setSelectedItem(null);
                   }}
-                  className="w-2/3 bg-zinc-900 text-white font-bold py-3.5 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-800 transition-all cursor-pointer disabled:opacity-40 shadow-md"
+                  className="w-3/4 bg-zinc-900 text-white font-bold py-4 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-800 transition-all cursor-pointer disabled:opacity-40 shadow-md"
                 >
-                  Add to Cart 🛒
+                  Add to Dispatch Cart 🛒
                 </button>
               </div>
 
@@ -550,7 +701,7 @@ export default function StorefrontPage() {
         );
       })()}
 
-      {/* 6. SLIDE-OVER DISPATCH CART DRAWER */}
+      {/* 7. SLIDE-OVER DISPATCH CART DRAWER */}
       {isCartOpen && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm transition-opacity">
           <div className="w-full max-w-md bg-white h-full p-6 sm:p-8 flex flex-col justify-between overflow-y-auto shadow-2xl animate-in slide-in-from-right duration-300">
