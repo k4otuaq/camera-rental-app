@@ -70,6 +70,23 @@ export default function StorefrontPage() {
 
   const rentalDays = calculateDays();
 
+  // Smooth Scroll Helper
+  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  // Reset Home State & Smooth Scroll to Top
+  const handleResetHome = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setSearchQuery("");
+    setActiveCategory("ALL");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   // Cart Functions
   const addToCart = (item: any) => {
     setCart((prev) => {
@@ -171,7 +188,7 @@ export default function StorefrontPage() {
     return matchesSearch && matchesCategory;
   });
 
-  // FAQ Content Array (Updated with your custom copy)
+  // FAQ Content Array
   const faqs = [
     {
       q: "Reservation and booking process?",
@@ -206,8 +223,8 @@ export default function StorefrontPage() {
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-zinc-100 px-6 lg:px-12 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           
-          {/* TUAQ K4O LOGO */}
-          <Link href="/" className="group block">
+          {/* TUAQ K4O LOGO - SMOOTH SCROLL TO TOP & RESET STOREFRONT */}
+          <Link href="/" onClick={handleResetHome} className="group block cursor-pointer">
             <div className="flex items-baseline gap-1">
               <span className="text-2xl font-bold tracking-tighter text-zinc-900">
                 tuaq
@@ -221,12 +238,20 @@ export default function StorefrontPage() {
             </p>
           </Link>
 
-          {/* DESKTOP NAV WITH FAQ TRIGGER */}
+          {/* DESKTOP NAV WITH SMOOTH SCROLL */}
           <nav className="hidden md:flex items-center gap-8 text-xs font-medium uppercase tracking-wider text-zinc-600">
-            <a href="#catalogue" className="hover:text-zinc-900 transition-colors">
+            <a 
+              href="#catalogue" 
+              onClick={(e) => scrollToSection(e, "catalogue")} 
+              className="hover:text-zinc-900 transition-colors cursor-pointer"
+            >
               Catalogue
             </a>
-            <a href="#about" className="hover:text-zinc-900 transition-colors">
+            <a 
+              href="#about" 
+              onClick={(e) => scrollToSection(e, "about")} 
+              className="hover:text-zinc-900 transition-colors cursor-pointer"
+            >
               About
             </a>
             <button
@@ -245,8 +270,17 @@ export default function StorefrontPage() {
                 placeholder="Search gear..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-zinc-50 border border-zinc-200 rounded-full px-4 py-1.5 text-xs text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-zinc-400 w-48 lg:w-64 transition-all"
+                className="bg-zinc-50 border border-zinc-200 rounded-full px-4 py-1.5 pr-8 text-xs text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-zinc-400 w-48 lg:w-64 transition-all"
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-900 text-xs font-bold transition-colors cursor-pointer"
+                  title="Clear search"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
             <button
@@ -291,14 +325,22 @@ export default function StorefrontPage() {
             ))}
           </div>
 
-          <div className="block sm:hidden min-w-[140px]">
+          <div className="block sm:hidden min-w-[140px] relative">
             <input
               type="text"
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-zinc-50 border border-zinc-200 rounded-full px-3 py-1.5 text-xs outline-none"
+              className="w-full bg-zinc-50 border border-zinc-200 rounded-full px-3 py-1.5 pr-7 text-xs outline-none"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-900 text-xs font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            )}
           </div>
         </div>
       </section>
@@ -315,8 +357,14 @@ export default function StorefrontPage() {
             ))}
           </div>
         ) : filteredEquipment.length === 0 ? (
-          <div className="text-center py-24 border border-dashed border-zinc-200 rounded-2xl">
+          <div className="text-center py-24 border border-dashed border-zinc-200 rounded-2xl space-y-3">
             <p className="text-sm font-semibold text-zinc-600">No equipment found matching your search.</p>
+            <button
+              onClick={(e) => handleResetHome(e)}
+              className="text-xs font-bold text-zinc-900 underline uppercase tracking-wider cursor-pointer"
+            >
+              Clear Filter & View All
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-12">
