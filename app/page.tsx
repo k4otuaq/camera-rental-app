@@ -70,21 +70,50 @@ export default function StorefrontPage() {
 
   const rentalDays = calculateDays();
 
-  // Smooth Scroll Helper
+  // Custom Slower Smooth Scroll Function (1.2 Seconds Cubic Ease-In-Out)
+  const customSmoothScrollTo = (targetY: number, duration: number = 1200) => {
+    const startY = window.pageYOffset || document.documentElement.scrollTop;
+    const distance = targetY - startY;
+    let startTime: number | null = null;
+
+    // Gentle ease-in-out curve
+    const easeInOutCubic = (t: number): number => {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    };
+
+    const step = (currentTime: number) => {
+      if (startTime === null) startTime = currentTime;
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = easeInOutCubic(progress);
+
+      window.scrollTo(0, startY + distance * easeProgress);
+
+      if (elapsed < duration) {
+        requestAnimationFrame(step);
+      }
+    };
+
+    requestAnimationFrame(step);
+  };
+
+  // Scroll to section with custom duration
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
     const element = document.getElementById(id);
     if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
+      const navOffset = 80; // Account for sticky header height
+      const targetY = element.getBoundingClientRect().top + window.pageYOffset - navOffset;
+      customSmoothScrollTo(Math.max(0, targetY), 1200);
     }
   };
 
-  // Reset Home State & Smooth Scroll to Top
+  // Reset Home State & Slower Smooth Scroll to Top
   const handleResetHome = (e: React.MouseEvent) => {
     e.preventDefault();
     setSearchQuery("");
     setActiveCategory("ALL");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    customSmoothScrollTo(0, 1200);
   };
 
   // Cart Functions
@@ -223,7 +252,7 @@ export default function StorefrontPage() {
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-zinc-100 px-6 lg:px-12 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           
-          {/* TUAQ K4O LOGO - SMOOTH SCROLL TO TOP & RESET STOREFRONT */}
+          {/* TUAQ K4O LOGO - SLOWER CUBIC SMOOTH SCROLL TO TOP */}
           <Link href="/" onClick={handleResetHome} className="group block cursor-pointer">
             <div className="flex items-baseline gap-1">
               <span className="text-2xl font-bold tracking-tighter text-zinc-900">
@@ -238,7 +267,7 @@ export default function StorefrontPage() {
             </p>
           </Link>
 
-          {/* DESKTOP NAV WITH SMOOTH SCROLL */}
+          {/* DESKTOP NAV WITH SLOWER SMOOTH SCROLL */}
           <nav className="hidden md:flex items-center gap-8 text-xs font-medium uppercase tracking-wider text-zinc-600">
             <a 
               href="#catalogue" 
