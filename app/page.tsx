@@ -675,7 +675,7 @@ export default function StorefrontPage() {
                   <p className="text-[10px] uppercase font-bold text-zinc-400">Rental Period ({completedOrder.rentalDays} Day{completedOrder.rentalDays > 1 ? "s" : ""})</p>
                   <p className="font-semibold text-zinc-900 mt-0.5">Start: {completedOrder.startDate}</p>
                   <p className="font-semibold text-zinc-900">End: {completedOrder.endDate}</p>
-                  <p className="text-zinc-500 text-[11px] mt-0.5">{completedOrder.fulfillment || completedOrder.deliveryMethod} • {completedOrder.paymentMethod}</p>
+                  <p className="text-zinc-500 text-[11px] mt-0.5">{completedOrder.deliveryMethod} • {completedOrder.paymentMethod}</p>
                 </div>
               </div>
 
