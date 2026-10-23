@@ -42,7 +42,7 @@ export default function StorefrontPage() {
     }
   };
 
-  // Checkout Step State
+  // Checkout Step State & Full Order Summary
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "details">("cart");
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
@@ -50,7 +50,22 @@ export default function StorefrontPage() {
   const [paymentMethod, setPaymentMethod] = useState("BANK TRANSFER");
   const [deliveryMethod, setDeliveryMethod] = useState("SELF-PICKUP");
   const [submittingBooking, setSubmittingBooking] = useState(false);
-  const [bookingSuccess, setBookingSuccess] = useState<string | null>(null);
+  
+  // Completed Order Summary State
+  const [completedOrder, setCompletedOrder] = useState<{
+    doNumber: string;
+    customerName: string;
+    phone: string;
+    identityNo: string;
+    startDate: string;
+    endDate: string;
+    rentalDays: number;
+    paymentMethod: string;
+    deliveryMethod: string;
+    items: { item: any; quantity: number }[];
+    dailySubtotal: number;
+    grandTotal: number;
+  } | null>(null);
 
   // Fetch Live Equipment Inventory
   const fetchEquipment = async () => {
@@ -128,7 +143,7 @@ export default function StorefrontPage() {
     customSmoothScrollTo(0, 1200);
   };
 
-  // Cart Functions with Non-Intrusive Toast Feedback
+  // Cart Functions
   const addToCart = (item: any, openDrawerDirectly: boolean = false) => {
     setCart((prev) => {
       const existing = prev.find((c) => c.item.id === item.id);
@@ -140,7 +155,6 @@ export default function StorefrontPage() {
       return [...prev, { item, quantity: 1 }];
     });
 
-    // Trigger Toast Notification
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     setToast({ message: `Added ${item.name} to dispatch` });
 
@@ -204,7 +218,21 @@ export default function StorefrontPage() {
 
       const data = await res.json();
       if (data.success) {
-        setBookingSuccess(data.booking?.doNumber || "DO-SUCCESS");
+        const doNum = data.booking?.doNumber || `DO-${Math.floor(100000 + Math.random() * 900000)}`;
+        setCompletedOrder({
+          doNumber: doNum,
+          customerName,
+          phone,
+          identityNo,
+          startDate,
+          endDate,
+          rentalDays,
+          paymentMethod,
+          deliveryMethod,
+          items: [...cart],
+          dailySubtotal,
+          grandTotal,
+        });
         setCart([]);
         setCheckoutStep("cart");
       } else {
@@ -370,7 +398,6 @@ export default function StorefrontPage() {
       {/* 2. CATALOGUE HERO */}
       <section id="catalogue" className="max-w-7xl mx-auto px-6 lg:px-12 pt-12 pb-6">
         <div className="border-b border-zinc-100 pb-8">
-          {/* SLIMMED DOWN CATALOGUE TITLE */}
           <h1 className="text-3xl sm:text-5xl font-bold tracking-tight uppercase text-zinc-900">
             Catalogue
           </h1>
@@ -525,7 +552,6 @@ export default function StorefrontPage() {
             
             {/* HEADING & DISPATCH DESCRIPTION */}
             <div className="space-y-3 max-w-xl">
-              {/* SLIMMED DOWN BANNER TITLE */}
               <h2 className="text-2xl sm:text-4xl font-bold uppercase tracking-tight leading-none text-zinc-900">
                 DON'T BE SHY, JUST SAY HI!
               </h2>
@@ -611,7 +637,102 @@ export default function StorefrontPage() {
 
       </footer>
 
-      {/* 5. MINIMALIST FAQ POPUP MODAL */}
+      {/* 5. PRINTABLE DISPATCH ORDER (DO) QUOTE MODAL */}
+      {completedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/60 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white max-w-2xl w-full rounded-3xl p-6 sm:p-10 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col justify-between border border-zinc-100 relative">
+            
+            <div className="overflow-y-auto space-y-6 pr-1 print:p-0">
+              
+              {/* DO HEADER */}
+              <div className="flex items-start justify-between border-b border-zinc-200 pb-6">
+                <div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-black tracking-tighter text-zinc-900">tuaq</span>
+                    <span className="text-xs font-bold text-zinc-600">k4o™</span>
+                  </div>
+                  <p className="text-[9px] font-bold tracking-widest text-zinc-400 uppercase">tech & support</p>
+                  <p className="text-xs text-zinc-500 font-mono mt-2">Kuala Lumpur, Malaysia • k4otuaqstudio@gmail.com</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full">
+                    DISPATCH ORDER
+                  </span>
+                  <p className="text-sm font-mono font-bold text-zinc-900 mt-2">{completedOrder.doNumber}</p>
+                  <p className="text-[11px] font-mono text-zinc-400">{new Date().toLocaleDateString()}</p>
+                </div>
+              </div>
+
+              {/* CLIENT & DATES GRID */}
+              <div className="grid grid-cols-2 gap-4 text-xs font-mono bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-zinc-400">Client Info</p>
+                  <p className="font-bold text-zinc-900 mt-0.5">{completedOrder.customerName}</p>
+                  <p className="text-zinc-600">{completedOrder.phone}</p>
+                  <p className="text-zinc-500 text-[11px]">IC/Pass: {completedOrder.identityNo}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-zinc-400">Rental Period ({completedOrder.rentalDays} Day{completedOrder.rentalDays > 1 ? "s" : ""})</p>
+                  <p className="font-semibold text-zinc-900 mt-0.5">Start: {completedOrder.startDate}</p>
+                  <p className="font-semibold text-zinc-900">End: {completedOrder.endDate}</p>
+                  <p className="text-zinc-500 text-[11px] mt-0.5">{completedOrder.fulfillment || completedOrder.deliveryMethod} • {completedOrder.paymentMethod}</p>
+                </div>
+              </div>
+
+              {/* ITEMIZED TABLE */}
+              <div>
+                <h4 className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-2">Selected Equipment</h4>
+                <div className="border border-zinc-100 rounded-2xl overflow-hidden text-xs">
+                  <div className="bg-zinc-100 px-4 py-2 font-bold text-zinc-600 grid grid-cols-12 gap-2 text-[10px] uppercase">
+                    <span className="col-span-7">Gear Item</span>
+                    <span className="col-span-2 text-center">Qty</span>
+                    <span className="col-span-3 text-right">Daily Rate</span>
+                  </div>
+                  <div className="divide-y divide-zinc-100">
+                    {completedOrder.items.map(({ item, quantity }, idx) => (
+                      <div key={idx} className="px-4 py-3 grid grid-cols-12 gap-2 font-mono items-center">
+                        <span className="col-span-7 font-bold text-zinc-900">{item.name}</span>
+                        <span className="col-span-2 text-center text-zinc-600">{quantity}</span>
+                        <span className="col-span-3 text-right text-zinc-900">RM {(item.dailyRate * quantity).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* TOTAL SUMMARY */}
+              <div className="border-t border-zinc-100 pt-4 space-y-1 text-xs font-mono text-right">
+                <p className="text-zinc-500">Daily Subtotal: <span className="font-bold text-zinc-900">RM {completedOrder.dailySubtotal.toFixed(2)}</span></p>
+                <p className="text-zinc-500">Duration Multiplier: <span className="font-bold text-zinc-900">{completedOrder.rentalDays} Day(s)</span></p>
+                <p className="text-base font-extrabold text-zinc-900 pt-2 border-t border-zinc-100">
+                  Estimated Total Quote: <span className="text-emerald-600">RM {completedOrder.grandTotal.toFixed(2)}</span>
+                </p>
+              </div>
+
+            </div>
+
+            {/* ACTION BUTTONS */}
+            <div className="pt-6 border-t border-zinc-100 mt-6 flex items-center justify-between gap-3">
+              <button
+                onClick={() => setCompletedOrder(null)}
+                className="bg-zinc-100 text-zinc-700 font-bold px-6 py-3.5 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-200 transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="bg-zinc-900 text-white font-bold px-8 py-3.5 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-800 transition-all cursor-pointer shadow-md flex items-center gap-2"
+              >
+                <span>Print / Save PDF</span>
+                <span>📄</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 6. MINIMALIST FAQ POPUP MODAL */}
       {isFaqOpen && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/60 backdrop-blur-md transition-all duration-300 animate-in fade-in"
@@ -673,7 +794,7 @@ export default function StorefrontPage() {
         </div>
       )}
 
-      {/* 6. EXPANDED LARGE ITEM DETAIL MODAL */}
+      {/* 7. EXPANDED LARGE ITEM DETAIL MODAL */}
       {selectedItem && (() => {
         const desc = selectedItem.description;
         const mount = selectedItem.lensMount || selectedItem.lens_mount;
@@ -852,7 +973,7 @@ export default function StorefrontPage() {
         );
       })()}
 
-      {/* 7. SLIDE-OVER DISPATCH CART DRAWER */}
+      {/* 8. SLIDE-OVER DISPATCH CART DRAWER */}
       {isCartOpen && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm transition-opacity">
           <div className="w-full max-w-md bg-white h-full p-6 sm:p-8 flex flex-col justify-between overflow-y-auto shadow-2xl animate-in slide-in-from-right duration-300">
@@ -874,26 +995,7 @@ export default function StorefrontPage() {
                 </button>
               </div>
 
-              {bookingSuccess ? (
-                <div className="py-12 text-center space-y-4">
-                  <div className="w-16 h-16 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-2xl mx-auto font-black">
-                    ✓
-                  </div>
-                  <h3 className="text-xl font-bold uppercase tracking-tight">Order Dispatched!</h3>
-                  <p className="text-xs text-zinc-600 font-mono">
-                    DO Ref Number: <span className="font-bold text-zinc-900">{bookingSuccess}</span>
-                  </p>
-                  <button
-                    onClick={() => {
-                      setBookingSuccess(null);
-                      setIsCartOpen(false);
-                    }}
-                    className="w-full bg-zinc-900 text-white font-bold py-3 rounded-full text-xs uppercase tracking-wider cursor-pointer mt-4"
-                  >
-                    Back to Catalogue
-                  </button>
-                </div>
-              ) : checkoutStep === "cart" ? (
+              {checkoutStep === "cart" ? (
                 <div className="space-y-6">
                   <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-100 space-y-3">
                     <p className="text-xs font-bold uppercase tracking-wider text-zinc-700">
@@ -1070,43 +1172,41 @@ export default function StorefrontPage() {
               )}
             </div>
 
-            {!bookingSuccess && (
-              <div className="border-t border-zinc-100 pt-4 mt-6 space-y-3">
-                <div className="space-y-1 text-xs">
-                  <div className="flex justify-between text-zinc-500">
-                    <span>Daily Subtotal</span>
-                    <span className="font-mono">RM {dailySubtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-zinc-500">
-                    <span>Duration</span>
-                    <span className="font-mono">{rentalDays} Day(s)</span>
-                  </div>
-                  <div className="flex justify-between text-zinc-900 font-extrabold text-sm pt-2 border-t border-zinc-100">
-                    <span>Estimated Total</span>
-                    <span className="font-mono text-base">RM {grandTotal.toFixed(2)}</span>
-                  </div>
+            <div className="border-t border-zinc-100 pt-4 mt-6 space-y-3">
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between text-zinc-500">
+                  <span>Daily Subtotal</span>
+                  <span className="font-mono">RM {dailySubtotal.toFixed(2)}</span>
                 </div>
-
-                {checkoutStep === "cart" ? (
-                  <button
-                    disabled={cart.length === 0}
-                    onClick={() => setCheckoutStep("details")}
-                    className="w-full bg-zinc-900 text-white font-bold py-3.5 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-800 transition-all cursor-pointer disabled:opacity-30 shadow-md"
-                  >
-                    Proceed to Details →
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    form="checkout-form"
-                    disabled={submittingBooking}
-                    className="w-full bg-zinc-900 text-white font-bold py-3.5 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-800 transition-all cursor-pointer disabled:opacity-50 shadow-md"
-                  >
-                    {submittingBooking ? "Processing..." : "Confirm Dispatch Booking 🛒"}
-                  </button>
-                )}
+                <div className="flex justify-between text-zinc-500">
+                  <span>Duration</span>
+                  <span className="font-mono">{rentalDays} Day(s)</span>
+                </div>
+                <div className="flex justify-between text-zinc-900 font-extrabold text-sm pt-2 border-t border-zinc-100">
+                  <span>Estimated Total</span>
+                  <span className="font-mono text-base">RM {grandTotal.toFixed(2)}</span>
+                </div>
               </div>
-            )}
+
+              {checkoutStep === "cart" ? (
+                <button
+                  disabled={cart.length === 0}
+                  onClick={() => setCheckoutStep("details")}
+                  className="w-full bg-zinc-900 text-white font-bold py-3.5 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-800 transition-all cursor-pointer disabled:opacity-30 shadow-md"
+                >
+                  Proceed to Details →
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  form="checkout-form"
+                  disabled={submittingBooking}
+                  className="w-full bg-zinc-900 text-white font-bold py-3.5 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-800 transition-all cursor-pointer disabled:opacity-50 shadow-md"
+                >
+                  {submittingBooking ? "Processing..." : "Confirm Dispatch Booking 🛒"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
