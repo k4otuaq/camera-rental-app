@@ -370,7 +370,8 @@ export default function StorefrontPage() {
       {/* 2. CATALOGUE HERO */}
       <section id="catalogue" className="max-w-7xl mx-auto px-6 lg:px-12 pt-12 pb-6">
         <div className="border-b border-zinc-100 pb-8">
-          <h1 className="text-4xl sm:text-6xl font-black tracking-tight uppercase text-zinc-900">
+          {/* SLIMMED DOWN CATALOGUE TITLE */}
+          <h1 className="text-3xl sm:text-5xl font-bold tracking-tight uppercase text-zinc-900">
             Catalogue
           </h1>
           <p className="text-xs sm:text-sm font-medium tracking-wide text-zinc-500 uppercase mt-2">
@@ -524,7 +525,8 @@ export default function StorefrontPage() {
             
             {/* HEADING & DISPATCH DESCRIPTION */}
             <div className="space-y-3 max-w-xl">
-              <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight leading-none text-zinc-900">
+              {/* SLIMMED DOWN BANNER TITLE */}
+              <h2 className="text-2xl sm:text-4xl font-bold uppercase tracking-tight leading-none text-zinc-900">
                 DON'T BE SHY, JUST SAY HI!
               </h2>
               <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed font-sans pt-1">
@@ -537,8 +539,8 @@ export default function StorefrontPage() {
               
               {/* WHATSAPP GLASS BUTTON WITH AUTO-FILL MESSAGE */}
               <a
-                href={`https://wa.me/6011163308322?text=${encodeURIComponent(
-                  "Hi k4otuaq™! I would like to check gear availability and request an official dispatch quote for my shoot."
+                href={`https://wa.me/60123456789?text=${encodeURIComponent(
+                  "Hi tuaq k4o™! I would like to check gear availability and request an official dispatch quote for my shoot."
                 )}`}
                 target="_blank"
                 rel="noreferrer"
