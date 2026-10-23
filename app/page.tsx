@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 export default function StorefrontPage() {
@@ -14,20 +14,33 @@ export default function StorefrontPage() {
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const [isFaqOpen, setIsFaqOpen] = useState(false);
 
+  // Toast Notification State
+  const [toast, setToast] = useState<{ message: string } | null>(null);
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Cart & Dispatch Drawer State
   const [cart, setCart] = useState<{ item: any; quantity: number }[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Booking / Dates State
-  const [startDate, setStartDate] = useState(() => {
-    const today = new Date();
-    return today.toISOString().split("T")[0];
-  });
+  // Booking / Dates State with Guardrails
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  const [startDate, setStartDate] = useState(() => todayStr);
   const [endDate, setEndDate] = useState(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split("T")[0];
   });
+
+  // Handle Start Date change and auto-adjust End Date
+  const handleStartDateChange = (newStart: string) => {
+    setStartDate(newStart);
+    if (newStart >= endDate) {
+      const nextDay = new Date(newStart);
+      nextDay.setDate(nextDay.getDate() + 1);
+      setEndDate(nextDay.toISOString().split("T")[0]);
+    }
+  };
 
   // Checkout Step State
   const [checkoutStep, setCheckoutStep] = useState<"cart" | "details">("cart");
@@ -76,7 +89,6 @@ export default function StorefrontPage() {
     const distance = targetY - startY;
     let startTime: number | null = null;
 
-    // Gentle ease-in-out curve
     const easeInOutCubic = (t: number): number => {
       return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     };
@@ -102,9 +114,9 @@ export default function StorefrontPage() {
     e.preventDefault();
     const element = document.getElementById(id);
     if (element) {
-      const navOffset = 80; // Account for sticky header height
+      const navOffset = 80;
       const targetY = element.getBoundingClientRect().top + window.pageYOffset - navOffset;
-      customSmoothScrollTo(Math.max(0, targetY), 1400);
+      customSmoothScrollTo(Math.max(0, targetY), 1200);
     }
   };
 
@@ -113,11 +125,11 @@ export default function StorefrontPage() {
     e.preventDefault();
     setSearchQuery("");
     setActiveCategory("ALL");
-    customSmoothScrollTo(0, 1400);
+    customSmoothScrollTo(0, 1200);
   };
 
-  // Cart Functions
-  const addToCart = (item: any) => {
+  // Cart Functions with Non-Intrusive Toast Feedback
+  const addToCart = (item: any, openDrawerDirectly: boolean = false) => {
     setCart((prev) => {
       const existing = prev.find((c) => c.item.id === item.id);
       if (existing) {
@@ -127,7 +139,18 @@ export default function StorefrontPage() {
       }
       return [...prev, { item, quantity: 1 }];
     });
-    setIsCartOpen(true);
+
+    // Trigger Toast Notification
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    setToast({ message: `Added ${item.name} to dispatch` });
+
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(null);
+    }, 2800);
+
+    if (openDrawerDirectly) {
+      setIsCartOpen(true);
+    }
   };
 
   const removeFromCart = (equipmentId: string) => {
@@ -246,8 +269,27 @@ export default function StorefrontPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white text-zinc-900 font-sans selection:bg-zinc-200">
+    <div className="min-h-screen bg-white text-zinc-900 font-sans selection:bg-zinc-200 relative">
       
+      {/* FLOATING TOAST NOTIFICATION */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3.5 bg-zinc-900/95 text-white backdrop-blur-xl border border-zinc-800 px-5 py-3 rounded-full shadow-2xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-4">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+          <span className="text-xs font-mono font-medium tracking-tight">
+            {toast.message}
+          </span>
+          <button
+            onClick={() => {
+              setToast(null);
+              setIsCartOpen(true);
+            }}
+            className="text-[11px] font-bold uppercase tracking-wider text-zinc-300 hover:text-white underline ml-2 cursor-pointer transition-colors"
+          >
+            View Cart →
+          </button>
+        </div>
+      )}
+
       {/* 1. EDITORIAL HEADER */}
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-zinc-100 px-6 lg:px-12 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -314,7 +356,7 @@ export default function StorefrontPage() {
 
             <button
               onClick={() => setIsCartOpen(true)}
-              className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 py-2 rounded-full text-xs font-medium transition-all cursor-pointer shadow-sm"
+              className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 py-2 rounded-full text-xs font-medium transition-all cursor-pointer shadow-sm active:scale-95"
             >
               <span>Dispatch</span>
               <span className="bg-zinc-700 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
@@ -457,7 +499,7 @@ export default function StorefrontPage() {
                       disabled={isOut}
                       onClick={(e) => {
                         e.stopPropagation();
-                        addToCart(item);
+                        addToCart(item, false);
                       }}
                       className="w-8 h-8 rounded-full bg-zinc-100 group-hover:bg-zinc-900 group-hover:text-white flex items-center justify-center text-sm font-bold transition-all duration-300 cursor-pointer disabled:opacity-20 shrink-0 hover:scale-105 active:scale-95"
                     >
@@ -493,9 +535,11 @@ export default function StorefrontPage() {
             {/* GLASS MATERIAL CONTACT BUTTONS */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 shrink-0">
               
-              {/* WHATSAPP GLASS BUTTON */}
+              {/* WHATSAPP GLASS BUTTON WITH AUTO-FILL MESSAGE */}
               <a
-                href="https://wa.me/601163308322"
+                href={`https://wa.me/6011163308322?text=${encodeURIComponent(
+                  "Hi k4otuaq™! I would like to check gear availability and request an official dispatch quote for my shoot."
+                )}`}
                 target="_blank"
                 rel="noreferrer"
                 className="group flex items-center gap-3.5 bg-white/60 hover:bg-white/90 backdrop-blur-xl border border-white/80 px-6 py-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 active:scale-95 cursor-pointer"
@@ -792,7 +836,7 @@ export default function StorefrontPage() {
                 <button
                   disabled={selectedItem.stock <= (selectedItem.rentedOut || 0)}
                   onClick={() => {
-                    addToCart(selectedItem);
+                    addToCart(selectedItem, true);
                     setSelectedItem(null);
                   }}
                   className="w-3/4 bg-zinc-900 text-white font-bold py-4 rounded-full text-xs uppercase tracking-wider hover:bg-zinc-800 transition-all cursor-pointer disabled:opacity-40 shadow-md"
@@ -860,8 +904,9 @@ export default function StorefrontPage() {
                         </label>
                         <input
                           type="date"
+                          min={todayStr}
                           value={startDate}
-                          onChange={(e) => setStartDate(e.target.value)}
+                          onChange={(e) => handleStartDateChange(e.target.value)}
                           className="w-full bg-white border border-zinc-200 rounded-lg p-2 font-mono text-xs outline-none"
                         />
                       </div>
@@ -871,6 +916,7 @@ export default function StorefrontPage() {
                         </label>
                         <input
                           type="date"
+                          min={startDate}
                           value={endDate}
                           onChange={(e) => setEndDate(e.target.value)}
                           className="w-full bg-white border border-zinc-200 rounded-lg p-2 font-mono text-xs outline-none"
