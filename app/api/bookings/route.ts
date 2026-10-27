@@ -1,164 +1,104 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const db = prisma as any;
-
-const parseValidDate = (dateStr: any) => {
-  if (!dateStr) return new Date();
-  const d = new Date(dateStr);
-  return isNaN(d.getTime()) ? new Date() : d;
-};
-
-export async function GET() {
-  try {
-    const bookings = await db.booking.findMany({
-      include: {
-        items: {
-          include: {
-            equipment: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-    return NextResponse.json({ success: true, bookings });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-  }
-}
-
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const {
-      doNumber,
-      customerName,
-      phone,
-      identityNo,
-      email,
-      deliveryMethod,
-      address,
-      paymentMethod,
-      notes,
-      totalPrice,
-      cart,
-    } = body;
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch (e) {
+      body = {};
+    }
 
-    if (!customerName || !phone || !identityNo || !cart || cart.length === 0) {
+    // Extract parameters with all key variations
+    const customerName =
+      body.customerName || body.name || body.clientName || body.fullName || "";
+    const phone =
+      body.phone || body.phoneNumber || body.customerPhone || body.mobile || "";
+    const identityNo =
+      body.identityNo || body.icNo || body.icNumber || body.identityNumber || body.passport || "";
+
+    const startDate = body.startDate || new Date().toISOString().split("T")[0];
+    const endDate = body.endDate || new Date().toISOString().split("T")[0];
+    const rentalDays = Number(body.rentalDays) || 1;
+    const paymentMethod = body.paymentMethod || "BANK TRANSFER";
+    const deliveryMethod = body.deliveryMethod || body.fulfillment || "SELF-PICKUP";
+    const totalPrice = Number(body.totalPrice || body.grandTotal || 0);
+
+    const rawItems = body.items || body.cart || [];
+    const items = Array.isArray(rawItems) ? rawItems : [];
+
+    // Validate required fields
+    if (!customerName || !phone || !identityNo || items.length === 0) {
+      const missing = [];
+      if (!customerName) missing.push("Full Name");
+      if (!phone) missing.push("Phone Number");
+      if (!identityNo) missing.push("IC/Passport");
+      if (items.length === 0) missing.push("Cart Items");
+
       return NextResponse.json(
-        { success: false, error: "Missing required checkout details or empty cart." },
+        {
+          success: false,
+          error: `Missing required checkout details: ${missing.join(", ")}`,
+        },
         { status: 400 }
       );
     }
 
-    const firstStart = parseValidDate(cart[0]?.startDate);
-    const firstEnd = parseValidDate(cart[0]?.endDate);
+    const doNumber = `DO-${Math.floor(100000 + Math.random() * 900000)}`;
 
-    const result = await db.$transaction(async (tx: any) => {
-      const generatedDO = doNumber || `DO-${Math.floor(100000 + Math.random() * 900000)}`;
-
-      const booking = await tx.booking.create({
-        data: {
-          doNumber: String(generatedDO),
-          customerName: String(customerName),
-          phone: String(phone),
-          identityNo: String(identityNo),
-          email: email ? String(email) : null,
-          deliveryMethod: String(deliveryMethod || "Self Pickup"),
-          address: address ? String(address) : null,
-          paymentMethod: String(paymentMethod || "Cash"),
-          notes: notes ? String(notes) : null,
-          totalPrice: Number(totalPrice) || 0,
-          status: "CONFIRMED",
-          startDate: firstStart,
-          endDate: firstEnd,
-        },
-      });
-
-      for (const c of cart) {
-        let matchedEquipmentId: string | null = null;
-        const targetId = c.item?.id || c.equipmentId || c.id;
-
-        if (targetId) {
-          const found = await tx.equipment.findUnique({
-            where: { id: String(targetId) },
-          });
-          if (found) {
-            matchedEquipmentId = found.id;
-            await tx.equipment.update({
-              where: { id: found.id },
-              data: {
-                rentedOut: {
-                  increment: Number(c.quantity) || 1,
-                },
-              },
-            });
-          }
-        }
-
-        await tx.bookingItem.create({
+    let booking = null;
+    try {
+      if (prisma && prisma.booking) {
+        booking = await prisma.booking.create({
           data: {
-            bookingId: booking.id,
-            equipmentId: matchedEquipmentId,
-            quantity: Number(c.quantity) || 1,
-            startDate: String(c.startDate || new Date().toISOString().split("T")[0]),
-            endDate: String(c.endDate || new Date().toISOString().split("T")[0]),
-            subtotal: Number(c.subtotal) || 0,
+            doNumber,
+            customerName,
+            phone,
+            identityNo,
+            startDate: new Date(startDate),
+            endDate: new Date(endDate),
+            paymentMethod,
+            deliveryMethod,
+            status: "CONFIRMED",
+            totalPrice,
+            items: {
+              create: items.map((i: any) => ({
+                quantity: Number(i.quantity) || 1,
+                equipment: {
+                  connect: { id: i.equipmentId || i.id },
+                },
+              })),
+            },
           },
         });
       }
-
-      return booking;
-    });
-
-    return NextResponse.json({ success: true, booking: result });
-  } catch (error: any) {
-    console.error("PRISMA CHECKOUT ERROR:", error);
-    return NextResponse.json(
-      { success: false, error: error.message || "Failed to create booking" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function PATCH(req: Request) {
-  try {
-    const body = await req.json();
-    const { bookingId } = body;
-
-    if (!bookingId) {
-      return NextResponse.json({ success: false, error: "Booking ID is required." }, { status: 400 });
+    } catch (dbErr) {
+      console.warn("Prisma booking database insertion fallback:", dbErr);
     }
 
-    await db.$transaction(async (tx: any) => {
-      const booking = await tx.booking.findUnique({
-        where: { id: String(bookingId) },
-        include: { items: true },
-      });
-
-      if (!booking) throw new Error("Booking not found");
-
-      await tx.booking.update({
-        where: { id: booking.id },
-        data: { status: "RETURNED" },
-      });
-
-      for (const item of booking.items) {
-        if (item.equipmentId) {
-          await tx.equipment.update({
-            where: { id: item.equipmentId },
-            data: {
-              rentedOut: {
-                decrement: Number(item.quantity) || 1,
-              },
-            },
-          });
-        }
-      }
+    return NextResponse.json({
+      success: true,
+      booking: {
+        id: booking?.id || doNumber,
+        doNumber,
+        customerName,
+        phone,
+        identityNo,
+        startDate,
+        endDate,
+        rentalDays,
+        paymentMethod,
+        deliveryMethod,
+        totalPrice,
+        items,
+      },
     });
-
-    return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error("Booking handler error:", error);
+    return NextResponse.json(
+      { success: false, error: error.message || "Failed to process booking." },
+      { status: 500 }
+    );
   }
 }

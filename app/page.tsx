@@ -197,15 +197,23 @@ export default function StorefrontPage() {
     try {
       const payload = {
         customerName,
+        name: customerName,
+        fullName: customerName,
         phone,
+        phoneNumber: phone,
         identityNo,
+        icNo: identityNo,
         paymentMethod,
         deliveryMethod,
+        fulfillment: deliveryMethod,
         startDate,
         endDate,
         rentalDays,
+        totalPrice: grandTotal,
+        grandTotal,
         items: cart.map((c) => ({
           equipmentId: c.item.id,
+          id: c.item.id,
           quantity: c.quantity,
         })),
       };
@@ -245,6 +253,7 @@ export default function StorefrontPage() {
       setSubmittingBooking(false);
     }
   };
+
 
   // Dynamic Category Filters
   const categories = [
