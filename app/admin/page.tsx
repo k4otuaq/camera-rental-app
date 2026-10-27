@@ -3,23 +3,35 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 
 export default function AdminPage() {
-  // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState(false);
 
-  // Active Tab & Data State
+  // Day / Night Theme State
+  const [isDarkMode, setIsDarkMode] = useState(true);
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("tuaq_theme");
+    if (savedTheme === "light") setIsDarkMode(false);
+  }, []);
+
+  const toggleTheme = () => {
+    setIsDarkMode((prev) => {
+      const next = !prev;
+      localStorage.setItem("tuaq_theme", next ? "dark" : "light");
+      return next;
+    });
+  };
+
   const [activeTab, setActiveTab] = useState<"inventory" | "bookings">("inventory");
   const [equipment, setEquipment] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Search & Filtering State
   const [searchQuery, setSearchQuery] = useState("");
   const [bookingStatusFilter, setBookingStatusFilter] = useState("ALL");
   const [inventoryCategoryFilter, setInventoryCategoryFilter] = useState("ALL");
 
-  // New Equipment Form State
   const [name, setName] = useState("");
   const [category, setCategory] = useState("CINEMA CAMERA");
   const [dailyRate, setDailyRate] = useState("");
@@ -31,7 +43,6 @@ export default function AdminPage() {
   const [submittingGear, setSubmittingGear] = useState(false);
   const [formSuccess, setFormSuccess] = useState(false);
 
-  // Authenticate Staff Passcode
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (pin === "1234" || pin === "tuaq2026") {
@@ -42,7 +53,6 @@ export default function AdminPage() {
     }
   };
 
-  // Fetch Inventory and Dispatch Bookings
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -73,7 +83,6 @@ export default function AdminPage() {
     }
   }, [isAuthenticated]);
 
-  // Add Equipment Item
   const handleAddEquipment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !dailyRate) return;
@@ -115,7 +124,6 @@ export default function AdminPage() {
     }
   };
 
-  // Quick Stock Status Update (Optimistic UI)
   const handleStockUpdate = async (id: string, delta: number) => {
     setEquipment((prev) =>
       prev.map((item) =>
@@ -135,7 +143,6 @@ export default function AdminPage() {
     }
   };
 
-  // Metrics Calculations
   const totalGearItems = equipment.length;
   const totalStockUnits = equipment.reduce((sum, item) => sum + (item.stock || 1), 0);
   const totalBookingsCount = bookings.length;
@@ -144,7 +151,6 @@ export default function AdminPage() {
     0
   );
 
-  // Filtered Equipment List
   const filteredEquipment = equipment.filter((item) => {
     const matchesSearch = item.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory =
@@ -153,7 +159,6 @@ export default function AdminPage() {
     return matchesSearch && matchesCategory;
   });
 
-  // Filtered Bookings List
   const filteredBookings = bookings.filter((b) => {
     const matchesSearch =
       b.doNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -167,18 +172,18 @@ export default function AdminPage() {
     return matchesSearch && matchesStatus;
   });
 
-  // PIN LOCK SCREEN MODAL
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-6 font-sans relative overflow-hidden">
-        {/* Ambient Glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-zinc-800/20 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="bg-zinc-900/80 border border-zinc-800 p-8 sm:p-10 rounded-3xl max-w-sm w-full space-y-6 text-center backdrop-blur-2xl shadow-2xl relative z-10 animate-in fade-in zoom-in-95">
+      <div className={`min-h-screen flex items-center justify-center p-6 font-sans relative overflow-hidden transition-colors duration-300 ${
+        isDarkMode ? "bg-zinc-950 text-white" : "bg-[#F6F5F2] text-zinc-900"
+      }`}>
+        <div className={`p-8 sm:p-10 rounded-3xl max-w-sm w-full space-y-6 text-center backdrop-blur-2xl shadow-2xl relative z-10 border transition-colors ${
+          isDarkMode ? "bg-zinc-900/80 border-zinc-800" : "bg-white/90 border-zinc-200"
+        }`}>
           <div>
             <div className="flex items-baseline justify-center gap-1">
-              <span className="text-3xl font-bold tracking-tighter text-white">tuaq</span>
-              <span className="text-xs font-semibold text-zinc-400">k4o™</span>
+              <span className="text-3xl font-bold tracking-tighter">tuaq</span>
+              <span className="text-xs font-semibold opacity-60">k4o™</span>
             </div>
             <p className="text-[10px] font-bold tracking-widest text-zinc-500 uppercase mt-1">
               Tech & Support — Staff Terminal
@@ -195,14 +200,12 @@ export default function AdminPage() {
                   setPin(e.target.value);
                   setPinError(false);
                 }}
-                className={`w-full bg-zinc-950/90 border rounded-2xl px-4 py-3.5 text-center text-sm font-mono text-white outline-none transition-colors ${
-                  pinError
-                    ? "border-red-500/80 focus:border-red-500"
-                    : "border-zinc-800 focus:border-zinc-500"
+                className={`w-full border rounded-2xl px-4 py-3.5 text-center text-sm font-mono outline-none transition-colors ${
+                  isDarkMode ? "bg-zinc-950 border-zinc-800 text-white focus:border-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-zinc-400"
                 }`}
               />
               {pinError && (
-                <p className="text-[11px] text-red-400 font-mono">
+                <p className="text-[11px] text-red-500 font-mono">
                   Incorrect PIN. Try default: 1234
                 </p>
               )}
@@ -210,17 +213,14 @@ export default function AdminPage() {
 
             <button
               type="submit"
-              className="w-full bg-white hover:bg-zinc-200 text-zinc-950 font-bold py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all cursor-pointer shadow-sm active:scale-95"
+              className="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all cursor-pointer shadow-sm active:scale-95"
             >
               Unlock Terminal 🔓
             </button>
           </form>
 
-          <div className="pt-2 border-t border-zinc-800/80">
-            <Link
-              href="/"
-              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors font-mono inline-flex items-center gap-1.5"
-            >
+          <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800">
+            <Link href="/" className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors font-mono">
               ← Return to Storefront
             </Link>
           </div>
@@ -230,38 +230,55 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-zinc-800 relative">
+    <div className={`min-h-screen font-sans transition-colors duration-300 relative ${
+      isDarkMode ? "bg-zinc-950 text-zinc-100 selection:bg-zinc-800" : "bg-white text-zinc-900 selection:bg-zinc-200"
+    }`}>
       
       {/* 1. EDITORIAL HEADER */}
-      <header className="border-b border-zinc-800/80 bg-zinc-900/60 backdrop-blur-md px-6 lg:px-12 py-4 sticky top-0 z-30">
+      <header className={`border-b backdrop-blur-md px-6 lg:px-12 py-4 sticky top-0 z-30 transition-colors ${
+        isDarkMode ? "bg-zinc-950/90 border-zinc-800/80" : "bg-white/90 border-zinc-100"
+      }`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/" className="group block cursor-pointer">
               <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-bold tracking-tighter text-white">tuaq</span>
-                <span className="text-xs font-semibold text-zinc-400">k4o™</span>
+                <span className={`text-2xl font-bold tracking-tighter ${isDarkMode ? "text-white" : "text-zinc-900"}`}>
+                  tuaq
+                </span>
+                <span className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-zinc-600"}`}>
+                  k4o™
+                </span>
               </div>
               <p className="text-[9px] font-medium tracking-widest text-zinc-500 uppercase -mt-1">
                 tech & support
               </p>
             </Link>
-            <span className="text-[9px] font-mono font-bold uppercase tracking-widest bg-zinc-800 text-zinc-300 px-3 py-1 rounded-full border border-zinc-700/50">
+            <span className={`text-[9px] font-mono font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${
+              isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-300" : "bg-zinc-100 border-zinc-200 text-zinc-700"
+            }`}>
               STAFF PORTAL
             </span>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-mono">
-            <Link
-              href="/"
-              className="hidden sm:block text-zinc-400 hover:text-white transition-colors"
+          <div className="flex items-center gap-3 sm:gap-4 text-xs font-mono">
+            <button
+              onClick={toggleTheme}
+              className={`px-3 py-1.5 rounded-full text-xs font-mono font-bold transition-all cursor-pointer border ${
+                isDarkMode ? "bg-zinc-900 border-zinc-800 text-amber-300" : "bg-zinc-100 border-zinc-200 text-zinc-700"
+              }`}
             >
-              View Storefront ↗
+              {isDarkMode ? "🌙 Dark" : "☀️ Day"}
+            </button>
+
+            <Link href="/" className="hidden sm:block text-zinc-400 hover:text-current transition-colors">
+              Storefront ↗
             </Link>
+            
             <button
               onClick={() => setIsAuthenticated(false)}
-              className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer"
+              className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-white px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer"
             >
-              Lock Terminal 🔒
+              Lock 🔒
             </button>
           </div>
         </div>
@@ -271,34 +288,43 @@ export default function AdminPage() {
         
         {/* 2. EXECUTIVE METRICS OVERVIEW BAR */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-zinc-900/60 border border-zinc-800/80 p-5 rounded-2xl backdrop-blur-xl space-y-1">
+          <div className={`border p-5 rounded-2xl space-y-1 ${
+            isDarkMode ? "bg-zinc-900/60 border-zinc-800/80" : "bg-[#F6F5F2] border-zinc-200/60"
+          }`}>
             <p className="text-[10px] font-mono font-bold uppercase text-zinc-500">Gear Catalog</p>
-            <p className="text-2xl font-extrabold text-white font-mono">{totalGearItems} <span className="text-xs font-normal text-zinc-500">models</span></p>
+            <p className="text-2xl font-extrabold font-mono">{totalGearItems} <span className="text-xs font-normal text-zinc-500">models</span></p>
           </div>
-          <div className="bg-zinc-900/60 border border-zinc-800/80 p-5 rounded-2xl backdrop-blur-xl space-y-1">
+          <div className={`border p-5 rounded-2xl space-y-1 ${
+            isDarkMode ? "bg-zinc-900/60 border-zinc-800/80" : "bg-[#F6F5F2] border-zinc-200/60"
+          }`}>
             <p className="text-[10px] font-mono font-bold uppercase text-zinc-500">Total Stock</p>
-            <p className="text-2xl font-extrabold text-emerald-400 font-mono">{totalStockUnits} <span className="text-xs font-normal text-zinc-500">units</span></p>
+            <p className="text-2xl font-extrabold text-emerald-500 font-mono">{totalStockUnits} <span className="text-xs font-normal text-zinc-500">units</span></p>
           </div>
-          <div className="bg-zinc-900/60 border border-zinc-800/80 p-5 rounded-2xl backdrop-blur-xl space-y-1">
+          <div className={`border p-5 rounded-2xl space-y-1 ${
+            isDarkMode ? "bg-zinc-900/60 border-zinc-800/80" : "bg-[#F6F5F2] border-zinc-200/60"
+          }`}>
             <p className="text-[10px] font-mono font-bold uppercase text-zinc-500">Total Orders</p>
-            <p className="text-2xl font-extrabold text-white font-mono">{totalBookingsCount} <span className="text-xs font-normal text-zinc-500">DO quotes</span></p>
+            <p className="text-2xl font-extrabold font-mono">{totalBookingsCount} <span className="text-xs font-normal text-zinc-500">DO quotes</span></p>
           </div>
-          <div className="bg-zinc-900/60 border border-zinc-800/80 p-5 rounded-2xl backdrop-blur-xl space-y-1">
+          <div className={`border p-5 rounded-2xl space-y-1 ${
+            isDarkMode ? "bg-zinc-900/60 border-zinc-800/80" : "bg-[#F6F5F2] border-zinc-200/60"
+          }`}>
             <p className="text-[10px] font-mono font-bold uppercase text-zinc-500">Estimated Revenue</p>
-            <p className="text-2xl font-extrabold text-emerald-400 font-mono">RM {totalEstimatedRevenue.toFixed(2)}</p>
+            <p className="text-2xl font-extrabold text-emerald-500 font-mono">RM {totalEstimatedRevenue.toFixed(2)}</p>
           </div>
         </div>
 
         {/* 3. CONTROLS HEADER & SEARCH BAR */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800 pb-6">
-          {/* TAB BUTTONS */}
+        <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6 ${
+          isDarkMode ? "border-zinc-800" : "border-zinc-100"
+        }`}>
           <div className="flex items-center gap-3">
             <button
               onClick={() => setActiveTab("inventory")}
               className={`px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
                 activeTab === "inventory"
-                  ? "bg-white text-zinc-950 shadow-md"
-                  : "bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800"
+                  ? isDarkMode ? "bg-white text-zinc-950" : "bg-zinc-900 text-white"
+                  : isDarkMode ? "bg-zinc-900 text-zinc-400 border border-zinc-800" : "bg-zinc-100 text-zinc-600 border border-zinc-200"
               }`}
             >
               Inventory Management ({equipment.length})
@@ -307,26 +333,29 @@ export default function AdminPage() {
               onClick={() => setActiveTab("bookings")}
               className={`px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
                 activeTab === "bookings"
-                  ? "bg-white text-zinc-950 shadow-md"
-                  : "bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800"
+                  ? isDarkMode ? "bg-white text-zinc-950" : "bg-zinc-900 text-white"
+                  : isDarkMode ? "bg-zinc-900 text-zinc-400 border border-zinc-800" : "bg-zinc-100 text-zinc-600 border border-zinc-200"
               }`}
             >
               Dispatch Orders ({bookings.length})
             </button>
           </div>
 
-          {/* SEARCH & REFRESH */}
           <div className="flex items-center gap-3">
             <input
               type="text"
               placeholder={activeTab === "inventory" ? "Search inventory gear..." : "Search DO# or Client Name..."}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-zinc-900 border border-zinc-800 rounded-full px-4 py-2 text-xs text-white placeholder:text-zinc-500 outline-none focus:border-zinc-500 w-full sm:w-64 transition-all"
+              className={`border rounded-full px-4 py-2 text-xs outline-none w-full sm:w-64 transition-all ${
+                isDarkMode ? "bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder:text-zinc-400"
+              }`}
             />
             <button
               onClick={fetchData}
-              className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white px-4 py-2 rounded-full text-xs font-mono font-bold transition-all cursor-pointer shrink-0"
+              className={`border hover:bg-zinc-800 px-4 py-2 rounded-full text-xs font-mono font-bold transition-all cursor-pointer shrink-0 ${
+                isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white" : "bg-zinc-100 border-zinc-200 text-zinc-700 hover:bg-zinc-200"
+              }`}
             >
               ↻ Sync
             </button>
@@ -338,13 +367,15 @@ export default function AdminPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
             {/* ADD GEAR FORM */}
-            <div className="lg:col-span-4 bg-zinc-900/70 border border-zinc-800 p-6 rounded-3xl space-y-4 backdrop-blur-xl">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+            <div className={`lg:col-span-4 border p-6 rounded-3xl space-y-4 backdrop-blur-xl ${
+              isDarkMode ? "bg-zinc-900/70 border-zinc-800" : "bg-[#F6F5F2] border-zinc-200/60"
+            }`}>
+              <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider">
                   Add New Equipment Listing
                 </h3>
                 {formSuccess && (
-                  <span className="text-[10px] font-mono text-emerald-400 font-bold animate-in fade-in">
+                  <span className="text-[10px] font-mono text-emerald-500 font-bold animate-in fade-in">
                     ✓ Added
                   </span>
                 )}
@@ -361,7 +392,9 @@ export default function AdminPage() {
                     placeholder="e.g. Sony FX6 Full-Frame Cinema Camera"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white outline-none focus:border-zinc-500 font-semibold"
+                    className={`w-full border rounded-xl p-2.5 font-semibold outline-none ${
+                      isDarkMode ? "bg-zinc-950 border-zinc-800 text-white" : "bg-white border-zinc-200 text-zinc-900"
+                    }`}
                   />
                 </div>
 
@@ -372,7 +405,9 @@ export default function AdminPage() {
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white outline-none cursor-pointer font-semibold"
+                    className={`w-full border rounded-xl p-2.5 font-semibold outline-none cursor-pointer ${
+                      isDarkMode ? "bg-zinc-950 border-zinc-800 text-white" : "bg-white border-zinc-200 text-zinc-900"
+                    }`}
                   >
                     <option value="CINEMA CAMERA">Cinema Camera</option>
                     <option value="LENSES">Lenses</option>
@@ -394,7 +429,9 @@ export default function AdminPage() {
                       placeholder="450.00"
                       value={dailyRate}
                       onChange={(e) => setDailyRate(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white font-mono outline-none focus:border-zinc-500"
+                      className={`w-full border rounded-xl p-2.5 font-mono outline-none ${
+                        isDarkMode ? "bg-zinc-950 border-zinc-800 text-white" : "bg-white border-zinc-200 text-zinc-900"
+                      }`}
                     />
                   </div>
                   <div>
@@ -406,34 +443,9 @@ export default function AdminPage() {
                       min="1"
                       value={stock}
                       onChange={(e) => setStock(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white font-mono outline-none focus:border-zinc-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase text-zinc-400 mb-1">
-                      Lens Mount
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. E-Mount / PL Mount"
-                      value={lensMount}
-                      onChange={(e) => setLensMount(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white outline-none focus:border-zinc-500 font-mono text-[11px]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase text-zinc-400 mb-1">
-                      Resolution
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 4K 120fps / 6K RAW"
-                      value={resolutionOutput}
-                      onChange={(e) => setResolutionOutput(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white outline-none focus:border-zinc-500 font-mono text-[11px]"
+                      className={`w-full border rounded-xl p-2.5 font-mono outline-none ${
+                        isDarkMode ? "bg-zinc-950 border-zinc-800 text-white" : "bg-white border-zinc-200 text-zinc-900"
+                      }`}
                     />
                   </div>
                 </div>
@@ -447,27 +459,16 @@ export default function AdminPage() {
                     placeholder="https://..."
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white outline-none focus:border-zinc-500 font-mono text-[11px]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold uppercase text-zinc-400 mb-1">
-                    Overview Description
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="Technical overview & features..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white outline-none focus:border-zinc-500 font-sans text-xs"
+                    className={`w-full border rounded-xl p-2.5 font-mono text-[11px] outline-none ${
+                      isDarkMode ? "bg-zinc-950 border-zinc-800 text-white" : "bg-white border-zinc-200 text-zinc-900"
+                    }`}
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={submittingGear}
-                  className="w-full bg-white text-zinc-950 font-bold py-3.5 rounded-2xl text-xs uppercase tracking-wider hover:bg-zinc-200 transition-colors cursor-pointer mt-2 disabled:opacity-50 shadow-md"
+                  className="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-colors cursor-pointer mt-2 disabled:opacity-50 shadow-md"
                 >
                   {submittingGear ? "Adding Gear..." : "Save to Inventory +"}
                 </button>
@@ -477,17 +478,19 @@ export default function AdminPage() {
             {/* LIVE INVENTORY TABLE */}
             <div className="lg:col-span-8 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+                <h3 className="text-xs font-bold uppercase tracking-wider">
                   Live Equipment Directory ({filteredEquipment.length})
                 </h3>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                   {["ALL", "CINEMA CAMERA", "LENSES", "LIGHTING", "SUPPORT & GRIP", "AUDIO"].map((cat) => (
                     <button
                       key={cat}
                       onClick={() => setInventoryCategoryFilter(cat)}
-                      className={`px-3 py-1 rounded-md text-[10px] font-mono font-bold uppercase transition-colors cursor-pointer ${
-                        inventoryCategoryFilter === cat ? "bg-white text-zinc-950" : "text-zinc-500 hover:text-zinc-300"
+                      className={`px-2.5 py-1 rounded-md text-[10px] font-mono font-bold uppercase transition-colors cursor-pointer ${
+                        inventoryCategoryFilter === cat
+                          ? isDarkMode ? "bg-white text-zinc-950" : "bg-zinc-900 text-white"
+                          : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
                       }`}
                     >
                       {cat === "CINEMA CAMERA" ? "CAMERAS" : cat}
@@ -497,55 +500,70 @@ export default function AdminPage() {
               </div>
 
               {loading ? (
-                <div className="py-16 text-center text-zinc-500 text-xs font-mono">
+                <div className="py-16 text-center text-zinc-400 text-xs font-mono">
                   Syncing inventory database...
                 </div>
               ) : filteredEquipment.length === 0 ? (
-                <div className="py-16 text-center text-zinc-500 text-xs border border-dashed border-zinc-800 rounded-2xl space-y-2">
+                <div className={`py-16 text-center text-zinc-500 text-xs border border-dashed rounded-2xl ${
+                  isDarkMode ? "border-zinc-800" : "border-zinc-200"
+                }`}>
                   <p>No inventory gear matches your search filter.</p>
                 </div>
               ) : (
-                <div className="border border-zinc-800 rounded-2xl overflow-hidden text-xs">
-                  <div className="bg-zinc-900/90 px-4 py-3 text-zinc-400 font-mono font-bold grid grid-cols-12 gap-2 text-[10px] uppercase tracking-wider border-b border-zinc-800">
+                <div className={`border rounded-2xl overflow-hidden text-xs ${
+                  isDarkMode ? "border-zinc-800" : "border-zinc-200"
+                }`}>
+                  <div className={`px-4 py-3 font-mono font-bold grid grid-cols-12 gap-2 text-[10px] uppercase tracking-wider border-b ${
+                    isDarkMode ? "bg-zinc-900/90 text-zinc-400 border-zinc-800" : "bg-zinc-100 text-zinc-600 border-zinc-200"
+                  }`}>
                     <span className="col-span-5">Equipment Name</span>
                     <span className="col-span-3">Category</span>
                     <span className="col-span-2 text-right">Daily Rate</span>
                     <span className="col-span-2 text-center">Stock Control</span>
                   </div>
-                  <div className="divide-y divide-zinc-800/60 bg-zinc-900/30">
+
+                  <div className={`divide-y ${
+                    isDarkMode ? "divide-zinc-800/60 bg-zinc-900/30" : "divide-zinc-100 bg-white"
+                  }`}>
                     {filteredEquipment.map((item) => {
                       const mount = item.lensMount || item.lens_mount;
                       return (
-                        <div key={item.id} className="px-4 py-3.5 grid grid-cols-12 gap-2 font-mono items-center hover:bg-zinc-900/60 transition-colors">
+                        <div key={item.id} className="px-4 py-3.5 grid grid-cols-12 gap-2 font-mono items-center">
                           <div className="col-span-5 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-zinc-950 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center text-base p-1">
+                            
+                            {/* FIX: WARM STUDIO BACKGROUND CONTAINER FOR PRODUCT PREVIEWS */}
+                            <div className="w-10 h-10 rounded-xl bg-[#F6F5F2] border border-zinc-200 overflow-hidden shrink-0 flex items-center justify-center text-base p-1">
                               {item.imageUrl ? (
                                 <img src={item.imageUrl} alt={item.name} className="w-full h-full object-contain mix-blend-multiply" />
                               ) : (
                                 "📷"
                               )}
                             </div>
+
                             <div className="min-w-0">
-                              <p className="font-bold text-white font-sans line-clamp-1">{item.name}</p>
-                              {mount && <p className="text-[10px] text-zinc-500">{mount}</p>}
+                              <p className={`font-bold font-sans line-clamp-1 ${isDarkMode ? "text-white" : "text-zinc-900"}`}>{item.name}</p>
+                              {mount && <p className="text-[10px] text-zinc-400">{mount}</p>}
                             </div>
                           </div>
 
                           <span className="col-span-3 text-[10px] text-zinc-400 uppercase tracking-tight">{item.category}</span>
-                          <span className="col-span-2 text-right text-emerald-400 font-bold">RM {item.dailyRate?.toFixed(2)}</span>
+                          <span className="col-span-2 text-right text-emerald-500 font-bold">RM {item.dailyRate?.toFixed(2)}</span>
 
-                          {/* STOCK ADJUSTMENT BUTTONS */}
                           <div className="col-span-2 flex items-center justify-center gap-2">
                             <button
                               onClick={() => handleStockUpdate(item.id, -1)}
-                              className="w-6 h-6 rounded bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs flex items-center justify-center cursor-pointer"
+                              className={`w-6 h-6 rounded font-bold text-xs flex items-center justify-center cursor-pointer ${
+                                isDarkMode ? "bg-zinc-800 text-white hover:bg-zinc-700" : "bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
+                              }`}
                             >
                               -
                             </button>
-                            <span className="font-bold text-zinc-200 w-4 text-center">{item.stock || 1}</span>
+                            <span className="font-bold w-4 text-center">{item.stock || 1}</span>
                             <button
                               onClick={() => handleStockUpdate(item.id, 1)}
-                              className="w-6 h-6 rounded bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs flex items-center justify-center cursor-pointer"
+                              className={`w-6 h-6 rounded font-bold text-xs flex items-center justify-center cursor-pointer ${
+                                isDarkMode ? "bg-zinc-800 text-white hover:bg-zinc-700" : "bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
+                              }`}
                             >
                               +
                             </button>
@@ -565,11 +583,10 @@ export default function AdminPage() {
         {activeTab === "bookings" && (
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+              <h3 className="text-xs font-bold uppercase tracking-wider">
                 Dispatch Orders History ({filteredBookings.length})
               </h3>
 
-              {/* STATUS FILTER CHIPS */}
               <div className="flex items-center gap-2 overflow-x-auto pb-1">
                 {["ALL", "CONFIRMED", "DISPATCHED", "COMPLETED", "CANCELLED"].map((st) => (
                   <button
@@ -577,8 +594,8 @@ export default function AdminPage() {
                     onClick={() => setBookingStatusFilter(st)}
                     className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase transition-colors cursor-pointer ${
                       bookingStatusFilter === st
-                        ? "bg-white text-zinc-950"
-                        : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:text-white"
+                        ? isDarkMode ? "bg-white text-zinc-950" : "bg-zinc-900 text-white"
+                        : "bg-zinc-100 dark:bg-zinc-900 text-zinc-500 border border-zinc-200 dark:border-zinc-800"
                     }`}
                   >
                     {st}
@@ -588,11 +605,13 @@ export default function AdminPage() {
             </div>
 
             {loading ? (
-              <div className="py-16 text-center text-zinc-500 text-xs font-mono">
+              <div className="py-16 text-center text-zinc-400 text-xs font-mono">
                 Loading client bookings...
               </div>
             ) : filteredBookings.length === 0 ? (
-              <div className="py-16 text-center text-zinc-500 text-xs border border-dashed border-zinc-800 rounded-2xl">
+              <div className={`py-16 text-center text-zinc-500 text-xs border border-dashed rounded-2xl ${
+                isDarkMode ? "border-zinc-800" : "border-zinc-200"
+              }`}>
                 No dispatch orders found matching status filter.
               </div>
             ) : (
@@ -604,66 +623,69 @@ export default function AdminPage() {
                   return (
                     <div
                       key={booking.id || booking.doNumber}
-                      className="bg-zinc-900/60 border border-zinc-800 p-6 rounded-3xl space-y-4 font-mono text-xs backdrop-blur-xl"
+                      className={`border p-6 rounded-3xl space-y-4 font-mono text-xs backdrop-blur-xl ${
+                        isDarkMode ? "bg-zinc-900/60 border-zinc-800" : "bg-[#F6F5F2] border-zinc-200/60"
+                      }`}
                     >
-                      {/* HEADER LINE */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800/80 pb-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-200 dark:border-zinc-800/80 pb-4">
                         <div className="space-y-1">
                           <div className="flex items-center gap-3">
-                            <span className="text-emerald-400 font-bold text-base">{booking.doNumber}</span>
-                            <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2.5 py-0.5 rounded-md">
+                            <span className="text-emerald-500 font-bold text-base">{booking.doNumber}</span>
+                            <span className="text-[10px] bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2.5 py-0.5 rounded-md">
                               {new Date(booking.startDate).toLocaleDateString()} → {new Date(booking.endDate).toLocaleDateString()}
                             </span>
                           </div>
-                          <p className="text-white font-sans font-bold text-sm">
+                          <p className="font-sans font-bold text-sm">
                             {booking.customerName} <span className="text-zinc-500 font-mono text-xs">({booking.phone})</span>
                           </p>
                         </div>
 
                         <div className="flex items-center gap-3 self-start sm:self-auto">
-                          <span className="text-emerald-400 font-extrabold text-base">
+                          <span className="text-emerald-500 font-extrabold text-base">
                             RM {totalPrice.toFixed(2)}
                           </span>
-                          <span className="bg-emerald-950/80 text-emerald-300 border border-emerald-800 px-3 py-1 rounded-full text-[10px] uppercase font-bold">
+                          <span className="bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 px-3 py-1 rounded-full text-[10px] uppercase font-bold">
                             {booking.status || "CONFIRMED"}
                           </span>
                         </div>
                       </div>
 
-                      {/* CLIENT & ORDER DETAILS */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-zinc-400 bg-zinc-950/50 p-4 rounded-2xl border border-zinc-800/60">
+                      <div className={`grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-2xl border ${
+                        isDarkMode ? "bg-zinc-950/50 border-zinc-800/60 text-zinc-400" : "bg-white border-zinc-200/80 text-zinc-600"
+                      }`}>
                         <div>
-                          <p className="text-[9px] uppercase font-bold text-zinc-500">IC / Passport</p>
-                          <p className="text-zinc-200 font-bold mt-0.5">{booking.identityNo}</p>
+                          <p className="text-[9px] uppercase font-bold text-zinc-400">IC / Passport</p>
+                          <p className="font-bold mt-0.5">{booking.identityNo}</p>
                         </div>
                         <div>
-                          <p className="text-[9px] uppercase font-bold text-zinc-500">Fulfillment</p>
-                          <p className="text-zinc-200 font-bold mt-0.5">{booking.deliveryMethod}</p>
+                          <p className="text-[9px] uppercase font-bold text-zinc-400">Fulfillment</p>
+                          <p className="font-bold mt-0.5">{booking.deliveryMethod}</p>
                         </div>
                         <div>
-                          <p className="text-[9px] uppercase font-bold text-zinc-500">Payment Method</p>
-                          <p className="text-zinc-200 font-bold mt-0.5">{booking.paymentMethod}</p>
+                          <p className="text-[9px] uppercase font-bold text-zinc-400">Payment Method</p>
+                          <p className="font-bold mt-0.5">{booking.paymentMethod}</p>
                         </div>
                         <div>
-                          <p className="text-[9px] uppercase font-bold text-zinc-500">Contact Client</p>
+                          <p className="text-[9px] uppercase font-bold text-zinc-400">Contact Client</p>
                           <a
                             href={`https://wa.me/${booking.phone?.replace(/[^0-9]/g, "")}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-emerald-400 font-bold hover:underline inline-block mt-0.5"
+                            className="text-emerald-500 font-bold hover:underline inline-block mt-0.5"
                           >
                             WhatsApp Chat 💬
                           </a>
                         </div>
                       </div>
 
-                      {/* ITEM LIST IF PRESENT */}
                       {items.length > 0 && (
                         <div className="space-y-1.5 pt-1">
-                          <p className="text-[9px] font-bold uppercase text-zinc-500">Reserved Equipment Items:</p>
+                          <p className="text-[9px] font-bold uppercase text-zinc-400">Reserved Equipment Items:</p>
                           <div className="flex flex-wrap gap-2">
                             {items.map((i: any, idx: number) => (
-                              <span key={idx} className="bg-zinc-800 text-zinc-300 px-3 py-1 rounded-lg text-[11px]">
+                              <span key={idx} className={`px-3 py-1 rounded-lg text-[11px] ${
+                                isDarkMode ? "bg-zinc-800 text-zinc-300" : "bg-zinc-200 text-zinc-800"
+                              }`}>
                                 • {i.equipment?.name || i.name || "Gear Item"} (x{i.quantity || 1})
                               </span>
                             ))}
