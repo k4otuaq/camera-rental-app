@@ -10,7 +10,7 @@ export async function POST(req: Request) {
       body = {};
     }
 
-    // Extract parameters with all key variations
+    // Extract parameters with fallback key names
     const customerName =
       body.customerName || body.name || body.clientName || body.fullName || "";
     const phone =
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     const rawItems = body.items || body.cart || [];
     const items = Array.isArray(rawItems) ? rawItems : [];
 
-    // Validate required fields
+    // Validate required checkout details
     if (!customerName || !phone || !identityNo || items.length === 0) {
       const missing = [];
       if (!customerName) missing.push("Full Name");
@@ -49,8 +49,8 @@ export async function POST(req: Request) {
 
     let booking = null;
     try {
-      if (prisma && prisma.booking) {
-        booking = await prisma.booking.create({
+      if (prisma && (prisma as any).booking) {
+        booking = await (prisma as any).booking.create({
           data: {
             doNumber,
             customerName,
@@ -64,11 +64,9 @@ export async function POST(req: Request) {
             totalPrice,
             items: {
               create: items.map((i: any) => ({
+                equipmentId: i.equipmentId || i.id,
                 quantity: Number(i.quantity) || 1,
-                equipment: {
-                  connect: { id: i.equipmentId || i.id },
-                },
-              })),
+              })) as any,
             },
           },
         });
