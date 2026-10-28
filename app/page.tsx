@@ -6,22 +6,6 @@ export default function StorefrontPage() {
   const [equipment, setEquipment] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Theme State (Day / Night)
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("tuaq_theme");
-    if (savedTheme === "dark") setIsDarkMode(true);
-  }, []);
-
-  const toggleTheme = () => {
-    setIsDarkMode((prev) => {
-      const next = !prev;
-      localStorage.setItem("tuaq_theme", next ? "dark" : "light");
-      return next;
-    });
-  };
-
   // Search & Category Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("ALL");
@@ -338,9 +322,7 @@ export default function StorefrontPage() {
   ];
 
   return (
-    <div className={`min-h-screen font-sans transition-colors duration-300 relative ${
-      isDarkMode ? "bg-zinc-950 text-zinc-100 selection:bg-zinc-800" : "bg-white text-zinc-900 selection:bg-zinc-200"
-    }`}>
+    <div className="min-h-screen bg-white text-zinc-900 font-sans selection:bg-zinc-200 relative">
       
       {/* FLOATING TOAST NOTIFICATION */}
       {toast && (
@@ -362,17 +344,15 @@ export default function StorefrontPage() {
       )}
 
       {/* 1. EDITORIAL HEADER */}
-      <header className={`sticky top-0 z-30 border-b backdrop-blur-md px-6 lg:px-12 py-4 transition-colors ${
-        isDarkMode ? "bg-zinc-950/90 border-zinc-800/80" : "bg-white/90 border-zinc-100"
-      }`}>
+      <header className="sticky top-0 z-30 border-b border-zinc-100 bg-white/90 backdrop-blur-md px-6 lg:px-12 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           
           <Link href="/" onClick={handleResetHome} className="group block cursor-pointer">
             <div className="flex items-baseline gap-1">
-              <span className={`text-2xl font-bold tracking-tighter ${isDarkMode ? "text-white" : "text-zinc-900"}`}>
+              <span className="text-2xl font-bold tracking-tighter text-zinc-900">
                 tuaq
               </span>
-              <span className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-zinc-600"}`}>
+              <span className="text-xs font-semibold text-zinc-600">
                 k4o™
               </span>
             </div>
@@ -381,46 +361,26 @@ export default function StorefrontPage() {
             </p>
           </Link>
 
-          <nav className={`hidden md:flex items-center gap-8 text-xs font-medium uppercase tracking-wider ${
-            isDarkMode ? "text-zinc-400" : "text-zinc-600"
-          }`}>
-            <a href="#catalogue" onClick={(e) => scrollToSection(e, "catalogue")} className="hover:text-current transition-colors cursor-pointer">
+          <nav className="hidden md:flex items-center gap-8 text-xs font-medium uppercase tracking-wider text-zinc-600">
+            <a href="#catalogue" onClick={(e) => scrollToSection(e, "catalogue")} className="hover:text-zinc-900 transition-colors cursor-pointer">
               Catalogue
             </a>
-            <a href="#about" onClick={(e) => scrollToSection(e, "about")} className="hover:text-current transition-colors cursor-pointer">
+            <a href="#about" onClick={(e) => scrollToSection(e, "about")} className="hover:text-zinc-900 transition-colors cursor-pointer">
               About
             </a>
-            <button onClick={() => setIsFaqOpen(true)} className="hover:text-current transition-colors cursor-pointer uppercase font-medium">
+            <button onClick={() => setIsFaqOpen(true)} className="hover:text-zinc-900 transition-colors cursor-pointer uppercase font-medium">
               FAQ
             </button>
           </nav>
 
           <div className="flex items-center gap-3 sm:gap-4">
-            
-            {/* DAY / NIGHT THEME TOGGLE BUTTON */}
-            <button
-              onClick={toggleTheme}
-              className={`px-3 py-1.5 rounded-full text-xs font-mono font-bold transition-all cursor-pointer border flex items-center gap-1.5 ${
-                isDarkMode
-                  ? "bg-zinc-900 border-zinc-800 text-amber-300 hover:bg-zinc-800"
-                  : "bg-zinc-100 border-zinc-200 text-zinc-700 hover:bg-zinc-200"
-              }`}
-              title="Toggle Day/Night Mode"
-            >
-              <span>{isDarkMode ? "🌙 Dark" : "☀️ Day"}</span>
-            </button>
-
             <div className="relative hidden sm:block">
               <input
                 type="text"
                 placeholder="Search gear..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={`border rounded-full px-4 py-1.5 pr-8 text-xs outline-none w-48 lg:w-64 transition-all ${
-                  isDarkMode
-                    ? "bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500 focus:border-zinc-500"
-                    : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400"
-                }`}
+                className="bg-zinc-50 border border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 rounded-full px-4 py-1.5 pr-8 text-xs outline-none w-48 lg:w-64 transition-all"
               />
               {searchQuery && (
                 <button
@@ -447,7 +407,7 @@ export default function StorefrontPage() {
 
       {/* 2. CATALOGUE HERO */}
       <section id="catalogue" className="max-w-7xl mx-auto px-6 lg:px-12 pt-12 pb-6 space-y-6">
-        <div className={`border-b pb-8 ${isDarkMode ? "border-zinc-800" : "border-zinc-100"}`}>
+        <div className="border-b border-zinc-100 pb-8">
           <h1 className="text-3xl sm:text-5xl font-bold tracking-tight uppercase">
             Catalogue
           </h1>
@@ -464,8 +424,8 @@ export default function StorefrontPage() {
               onClick={() => setActiveCategory(cat)}
               className={`px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
                 activeCategory === cat
-                  ? isDarkMode ? "bg-white text-zinc-950 shadow-sm" : "bg-zinc-900 text-white shadow-sm"
-                  : isDarkMode ? "text-zinc-400 hover:text-white hover:bg-zinc-900" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
+                  ? "bg-zinc-900 text-white shadow-sm"
+                  : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
               }`}
             >
               {cat}
@@ -474,9 +434,7 @@ export default function StorefrontPage() {
         </div>
 
         {/* SUB-FILTERS: BRAND & MOUNT */}
-        <div className={`flex flex-wrap items-center gap-x-6 gap-y-3 pt-2 text-xs font-mono border-t ${
-          isDarkMode ? "border-zinc-800" : "border-zinc-100"
-        }`}>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-2 text-xs font-mono border-t border-zinc-100">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold uppercase text-zinc-400">Brand:</span>
             <div className="flex items-center gap-1.5">
@@ -486,8 +444,8 @@ export default function StorefrontPage() {
                   onClick={() => setActiveBrand(b)}
                   className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase transition-colors cursor-pointer ${
                     activeBrand === b
-                      ? isDarkMode ? "bg-zinc-800 text-white" : "bg-zinc-200 text-zinc-900"
-                      : "text-zinc-500 hover:text-zinc-400"
+                      ? "bg-zinc-200 text-zinc-900"
+                      : "text-zinc-500 hover:text-zinc-900"
                   }`}
                 >
                   {b}
@@ -505,8 +463,8 @@ export default function StorefrontPage() {
                   onClick={() => setActiveMount(m)}
                   className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase transition-colors cursor-pointer ${
                     activeMount === m
-                      ? isDarkMode ? "bg-zinc-800 text-white" : "bg-zinc-200 text-zinc-900"
-                      : "text-zinc-500 hover:text-zinc-400"
+                      ? "bg-zinc-200 text-zinc-900"
+                      : "text-zinc-500 hover:text-zinc-900"
                   }`}
                 >
                   {m}
@@ -523,15 +481,13 @@ export default function StorefrontPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
             {[1, 2, 3, 4].map((n) => (
               <div key={n} className="animate-pulse space-y-3">
-                <div className={`aspect-square rounded-2xl ${isDarkMode ? "bg-zinc-900" : "bg-zinc-100"}`}></div>
-                <div className={`h-4 rounded w-3/4 ${isDarkMode ? "bg-zinc-900" : "bg-zinc-100"}`}></div>
+                <div className="aspect-square rounded-2xl bg-zinc-100"></div>
+                <div className="h-4 rounded w-3/4 bg-zinc-100"></div>
               </div>
             ))}
           </div>
         ) : filteredEquipment.length === 0 ? (
-          <div className={`text-center py-24 border border-dashed rounded-2xl space-y-3 ${
-            isDarkMode ? "border-zinc-800" : "border-zinc-200"
-          }`}>
+          <div className="text-center py-24 border border-dashed border-zinc-200 rounded-2xl space-y-3">
             <p className="text-sm font-semibold text-zinc-500">No equipment found matching your criteria.</p>
             <button
               onClick={(e) => handleResetHome(e)}
@@ -553,7 +509,6 @@ export default function StorefrontPage() {
                   className="group flex flex-col justify-between cursor-pointer transition-all duration-300"
                   onClick={() => setSelectedItem(item)}
                 >
-                  {/* WARM STUDIO IMAGE CONTAINER FOR CRISP PRODUCT PREVIEWS */}
                   <div className="relative aspect-square w-full bg-[#F6F5F2] rounded-2xl overflow-hidden flex items-center justify-center p-6 transition-all duration-500 ease-out group-hover:-translate-y-1.5 group-hover:shadow-xl group-hover:shadow-black/10">
                     {item.imageUrl ? (
                       <img
@@ -585,9 +540,7 @@ export default function StorefrontPage() {
 
                   <div className="mt-3.5 flex items-start justify-between gap-3 px-0.5">
                     <div className="space-y-1 min-w-0">
-                      <h3 className={`text-sm font-bold transition-colors line-clamp-1 ${
-                        isDarkMode ? "text-white group-hover:text-zinc-400" : "text-zinc-900 group-hover:text-zinc-600"
-                      }`}>
+                      <h3 className="text-sm font-bold text-zinc-900 group-hover:text-zinc-600 transition-colors line-clamp-1">
                         {item.name}
                       </h3>
                       {(mount || resOut) && (
@@ -595,7 +548,7 @@ export default function StorefrontPage() {
                           {[mount, resOut].filter(Boolean).join(" • ")}
                         </p>
                       )}
-                      <p className={`text-xs font-mono font-bold pt-0.5 ${isDarkMode ? "text-emerald-400" : "text-zinc-900"}`}>
+                      <p className="text-xs font-mono font-bold text-zinc-900 pt-0.5">
                         RM {item.dailyRate?.toFixed(2)}{" "}
                         <span className="text-[10px] font-normal text-zinc-400">/ day</span>
                       </p>
@@ -607,11 +560,7 @@ export default function StorefrontPage() {
                         e.stopPropagation();
                         addToCart(item, false);
                       }}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 cursor-pointer disabled:opacity-20 shrink-0 hover:scale-105 active:scale-95 ${
-                        isDarkMode
-                          ? "bg-zinc-900 hover:bg-white hover:text-zinc-950 text-white border border-zinc-800"
-                          : "bg-zinc-100 hover:bg-zinc-900 hover:text-white text-zinc-900"
-                      }`}
+                      className="w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-900 hover:text-white text-zinc-900 flex items-center justify-center text-sm font-bold transition-all duration-300 cursor-pointer disabled:opacity-20 shrink-0 hover:scale-105 active:scale-95"
                     >
                       +
                     </button>
@@ -623,19 +572,15 @@ export default function StorefrontPage() {
         )}
       </main>
 
-      {/* 4. FOOTER BANNER WITH GLASS MATERIAL CONTACT ICONS */}
+      {/* 4. FOOTER BANNER */}
       <footer id="about" className="mt-16 px-6 lg:px-12 pb-12">
-        <div className={`max-w-7xl mx-auto border rounded-3xl p-8 sm:p-14 lg:p-16 relative overflow-hidden ${
-          isDarkMode ? "bg-zinc-900/60 border-zinc-800/80" : "bg-[#F6F5F2] border-zinc-200/60"
-        }`}>
+        <div className="max-w-7xl mx-auto border border-zinc-200/60 bg-[#F6F5F2] rounded-3xl p-8 sm:p-14 lg:p-16 relative overflow-hidden">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
             <div className="space-y-3 max-w-xl">
-              <h2 className="text-2xl sm:text-4xl font-bold uppercase tracking-tight leading-none">
+              <h2 className="text-2xl sm:text-4xl font-bold uppercase tracking-tight leading-none text-zinc-900">
                 DON'T BE SHY, JUST SAY HI!
               </h2>
-              <p className={`text-xs sm:text-sm leading-relaxed font-sans pt-1 ${
-                isDarkMode ? "text-zinc-400" : "text-zinc-600"
-              }`}>
+              <p className="text-xs sm:text-sm leading-relaxed font-sans text-zinc-600 pt-1">
                 Send your equipment list and shoot dates. Our rental desk will confirm gear availability and issue an official dispatch quote for your project.
               </p>
             </div>
@@ -674,22 +619,20 @@ export default function StorefrontPage() {
           </div>
         </div>
 
-        <div className={`max-w-7xl mx-auto mt-10 pt-6 border-t flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 text-xs font-mono ${
-          isDarkMode ? "border-zinc-800 text-zinc-500" : "border-zinc-100 text-zinc-400"
-        }`}>
+        <div className="max-w-7xl mx-auto mt-10 pt-6 border-t border-zinc-100 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 text-xs font-mono text-zinc-400">
           <div className="flex items-center gap-4">
-            <button onClick={() => setIsFaqOpen(true)} className="hover:text-current transition-colors cursor-pointer">
+            <button onClick={() => setIsFaqOpen(true)} className="hover:text-zinc-900 transition-colors cursor-pointer">
               Rental FAQ
             </button>
           </div>
 
           <div className="text-left sm:text-right space-y-1">
-            <p className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-zinc-600"}`}>
+            <p className="text-xs font-semibold text-zinc-600">
               k4otuaqstudio@gmail.com • Kuala Lumpur, Malaysia
             </p>
             <div className="flex items-center justify-start sm:justify-end gap-3 text-[11px]">
               <span>© {new Date().getFullYear()} tuaq k4o™ tech & support. All rights reserved.</span>
-              <Link href="/admin" title="Staff Portal Login" className="opacity-30 hover:opacity-100 transition-opacity p-1 rounded hover:bg-zinc-800">
+              <Link href="/admin" title="Staff Portal Login" className="opacity-30 hover:opacity-100 transition-opacity p-1 rounded hover:bg-zinc-100">
                 🔒
               </Link>
             </div>
@@ -697,7 +640,7 @@ export default function StorefrontPage() {
         </div>
       </footer>
 
-      {/* 5. PRINTABLE DISPATCH ORDER (DO) QUOTE MODAL WITH WHATSAPP DISPATCH */}
+      {/* 5. PRINTABLE DISPATCH ORDER SUMMARY MODAL */}
       {completedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/60 backdrop-blur-md animate-in fade-in">
           <div className="bg-white text-zinc-900 max-w-2xl w-full rounded-3xl p-6 sm:p-10 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col justify-between border border-zinc-100 relative">
