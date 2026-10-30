@@ -13,6 +13,7 @@
     "@libsql/client": "^0.8.1",
     "@prisma/adapter-libsql": "^5.22.0",
     "@prisma/client": "^5.22.0",
+    "@react-pdf/renderer": "^4.9.0",
     "next": "16.4.0",
     "prisma": "^5.22.0",
     "react": "19.3.0",
@@ -31,6 +32,4 @@
   "prisma": {
     "seed": "node prisma/prisma/seed.js"
   }
-
-  }
-
+}

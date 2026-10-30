@@ -1,59 +1,68 @@
-generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
-}
-
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  DISPATCHED
+  COMPLETED
+  CANCELLED
+}
 
 model Equipment {
-  id                  String        @id @default(uuid())
-  name                String
-  category            String
-  serialNumber        String        @unique
-  dailyRate           Float
-  imageUrl            String?
-  stock               Int           @default(1)
-  rentedOut           Int           @default(0)
-  description         String?
-  mount               String?
-  resolution          String?
-  keyFeatures         String?
-  includedAccessories String?
-  bookingItems        BookingItem[]
-  createdAt           DateTime      @default(now())
+  id               String        @id @default(cuid())
+  name             String
+  category         String
+  dailyRate        Decimal       @db.Decimal(10, 2)
+  stock            Int           @default(1)
+  imageUrl         String?
+  lensMount        String?
+  resolutionOutput String?
+  description      String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  bookingItems     BookingItem[]
+
+  @@index([category])
 }
 
 model Booking {
-  id             String        @id @default(uuid())
-  doNumber       String        @unique
+  id             String        @id @default(cuid())
+  doNumber       String        @unique // e.g. DO-20261030-9421
   customerName   String
   phone          String
   identityNo     String
-  email          String?
-  deliveryMethod String
-  address        String?
+  startDate      DateTime      @db.Date
+  endDate        DateTime      @db.Date
+  rentalDays     Int
+  dailySubtotal  Decimal       @db.Decimal(10, 2)
+  grandTotal     Decimal       @db.Decimal(10, 2)
   paymentMethod  String
-  notes          String?
-  totalPrice     Float
-  status         String        @default("CONFIRMED")
-  startDate      DateTime?
-  endDate        DateTime?
-  items          BookingItem[]
+  deliveryMethod String
+  status         BookingStatus @default(CONFIRMED)
   createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  items          BookingItem[]
+
+  @@index([startDate, endDate])
+  @@index([phone, customerName])
 }
 
 model BookingItem {
-  id          String     @id @default(uuid())
+  id          String    @id @default(cuid())
   bookingId   String
-  booking     Booking    @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  equipmentId String?
-  equipment   Equipment? @relation(fields: [equipmentId], references: [id])
-  quantity    Int        @default(1)
-  startDate   String
-  endDate     String
-  subtotal    Float
+  booking     Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id])
+  quantity    Int
+  unitRate    Decimal   @db.Decimal(10, 2)
+
+  @@index([bookingId])
+  @@index([equipmentId])
 }
